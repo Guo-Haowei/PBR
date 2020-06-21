@@ -9,30 +9,19 @@ namespace pbr {
 class Window
 {
 public:
-    struct CreateInfo
-    {
-        Extent2i        extent;
-        float           windowScale;
-        bool            resizable;
-        Renderer        renderer;
-        // msaa
-        // vsync
-
-        CreateInfo(Renderer renderer, float windowScale = 0.0f, const Extent2i& extent = Extent2i(), bool resizable = true)
-            : extent(extent), windowScale(windowScale), resizable(resizable), renderer(renderer) { }
-    };
-
-    void Initialize(const CreateInfo& info);
+    void Initialize(const WindowCreateInfo& info);
     void Finalize();
     bool ShouldClose() const;
     void PollEvents() const;
+    void SwapBuffers() const;
+    inline RenderApi GetRenderApi() const { return m_renderApi; }
 
 private:
-    void setWindowSizeFromCreateInfo(const CreateInfo& info);
-    void setWindowHintFromCreateInfo(const CreateInfo& info);
+    void setWindowSizeFromCreateInfo(const WindowCreateInfo& info);
+    void setWindowHintFromCreateInfo(const WindowCreateInfo& info);
 
 private:
-    Renderer            m_renderer      = Renderer::UNKNOWN;
+    RenderApi           m_renderApi     = RenderApi::UNKNOWN;
     GLFWwindow*         m_pWindow       = nullptr;
     Extent2i            m_windowExtent  = { 0, 0 };
     string              m_windowTitle;

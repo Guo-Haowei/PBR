@@ -9,12 +9,12 @@
 #elif defined(__APPLE__)
 #   define TARGET_PLATFORM PLATFORM_MACOS
 #else
-#   pragma error "Unsupported platform"
+#   error "Unsupported platform"
 #endif
 
 #if TARGET_PLATFORM == PLATFORM_WINDOWS
 #   define PBR_GL_VERSION_MAJOR 4
-#   define PBR_GL_VERSION_MINOR 5
+#   define PBR_GL_VERSION_MINOR 6
 #elif TARGET_PLATFORM == PLATFORM_MACOS
 #   define PBR_GL_VERSION_MAJOR 4
 #   define PBR_GL_VERSION_MINOR 1

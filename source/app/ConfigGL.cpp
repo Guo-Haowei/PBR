@@ -1,7 +1,4 @@
-#include "pbr/Application.h"
-
+#include "pbr/Config.h"
 namespace pbr {
-
-    Window::CreateInfo g_windowCreateInfo(Renderer::OPENGL, 0.7f);
-
+    WindowCreateInfo g_windowCreateInfo(RenderApi::OPENGL, 0.7f, {}, true);
 } // namespace pbr

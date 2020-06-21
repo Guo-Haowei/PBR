@@ -1,9 +1,8 @@
 #pragma once
 #include "Window.h"
+#include "Renderer.h"
 
 namespace pbr {
-
-extern Window::CreateInfo g_windowCreateInfo;
 
 class Application
 {
@@ -12,9 +11,11 @@ public:
     void Run();
 private:
     void initialize();
+    void mainloop();
     void finalize();
 private:
-    Window m_window;
+    unique_ptr<Window>      m_window;
+    unique_ptr<Renderer>    m_renderer;
 };
 
 } // namespace pbr

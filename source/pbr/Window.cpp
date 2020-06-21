@@ -6,8 +6,10 @@
 
 namespace pbr {
 
-void Window::Initialize(const CreateInfo& info)
+void Window::Initialize(const WindowCreateInfo& info)
 {
+    m_renderApi = info.renderApi;
+
     glfwSetErrorCallback([](int error, const char* desc)
     {
         throw std::runtime_error("[Error][glfw] " + string(desc));
@@ -42,7 +44,13 @@ void Window::PollEvents() const
     glfwPollEvents();
 }
 
-void Window::setWindowSizeFromCreateInfo(const CreateInfo& info)
+void Window::SwapBuffers() const
+{
+    if (m_renderApi == RenderApi::OPENGL)
+        glfwSwapBuffers(m_pWindow);
+}
+
+void Window::setWindowSizeFromCreateInfo(const WindowCreateInfo& info)
 {
     if (info.windowScale > 0.0f)
     {
@@ -56,17 +64,20 @@ void Window::setWindowSizeFromCreateInfo(const CreateInfo& info)
     }
 }
 
-void Window::setWindowHintFromCreateInfo(const CreateInfo& info)
+void Window::setWindowHintFromCreateInfo(const WindowCreateInfo& info)
 {
     // common
     m_windowTitle = "PBR ";
 
     glfwWindowHint(GLFW_RESIZABLE, info.resizable);
-    switch (info.renderer)
+    switch (info.renderApi)
     {
-        case Renderer::OPENGL:
+        case RenderApi::OPENGL:
             glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, PBR_GL_VERSION_MAJOR);
             glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, PBR_GL_VERSION_MINOR);
+#if PBR_GL_VERSION >= 430 && defined(_DEBUG)
+            glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+#endif
             m_windowTitle.append(" (OpenGL)");
             break;
         default:

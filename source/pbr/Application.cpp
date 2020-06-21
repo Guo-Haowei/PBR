@@ -1,8 +1,7 @@
 #include "Application.h"
+#include "Config.h"
 
 namespace pbr {
-
-extern Window::CreateInfo g_windowCreateInfo;
 
 Application::Application()
 {
@@ -12,9 +11,9 @@ void Application::Run()
 {
     initialize();
 
-    while (!m_window.ShouldClose())
+    while (!m_window->ShouldClose())
     {
-        m_window.PollEvents();
+        mainloop();
     }
 
     finalize();
@@ -22,13 +21,23 @@ void Application::Run()
 
 void Application::initialize()
 {
-    m_window.Initialize(g_windowCreateInfo);
+    m_window.reset(new Window());
+    m_window->Initialize(g_windowCreateInfo);
+    m_renderer.reset(Renderer::CreateRenderer(m_window.get()));
+    m_renderer->Initialize();
+}
+
+void Application::mainloop()
+{
+    m_window->PollEvents();
+    m_renderer->Render();
+    m_window->SwapBuffers();
 }
 
 void Application::finalize()
 {
-    m_window.Finalize();
+    m_renderer->Finalize();
+    m_window->Finalize();
 }
 
 } // namespace pbr
-
