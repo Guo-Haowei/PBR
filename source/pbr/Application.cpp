@@ -41,6 +41,7 @@ void Application::initialize()
     m_window->Initialize(g_windowCreateInfo);
     m_renderer.reset(Renderer::CreateRenderer(m_window.get()));
     m_renderer->Initialize();
+    m_renderer->DumpGraphicsCardInfo();
 }
 
 void Application::Mainloop()

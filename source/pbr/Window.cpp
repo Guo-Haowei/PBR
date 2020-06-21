@@ -1,6 +1,7 @@
 #include "Window.h"
 #include "Platform.h"
 #include "Error.h"
+#include "Application.h"
 #include <GLFW/glfw3.h>
 #include <stdexcept>
 
@@ -28,7 +29,28 @@ void Window::Initialize(const WindowCreateInfo& info)
         throw runtime_error("[Error][glfw] failed to create glfw window");
 
     glfwSetWindowUserPointer(m_pWindow, this);
-    glfwMakeContextCurrent(m_pWindow);
+
+    glfwSetWindowSizeCallback(m_pWindow, [](GLFWwindow* pWindow, int w, int h)
+    {
+        Extent2i extent { w, h };
+        reinterpret_cast<pbr::Window*>(glfwGetWindowUserPointer(pWindow))->SetWindowExtent({ w, h });
+    });
+    glfwSetFramebufferSizeCallback(m_pWindow, [](GLFWwindow* pWindow, int w, int h)
+    {
+        Extent2i extent { w, h };
+        reinterpret_cast<pbr::Window*>(glfwGetWindowUserPointer(pWindow))->SetFrameBufferExtent({ w, h });
+        Application::GetSingleton().GetRenderer()->Resize(extent);
+    });
+
+    if (m_renderApi == RenderApi::OPENGL)
+        glfwMakeContextCurrent(m_pWindow);
+
+    glfwGetWindowSize(m_pWindow, &m_windowExtent.width, &m_windowExtent.height);
+    glfwGetFramebufferSize(m_pWindow, &m_framebufferExtent.width, &m_framebufferExtent.height);
+
+    std::cout << "************* Debug Info *************\n";
+    std::cout << "Window size:       " << m_windowExtent << std::endl;
+    std::cout << "Framebuffer size:  " << m_framebufferExtent << std::endl;
 }
 
 void Window::Finalize()
@@ -84,8 +106,14 @@ void Window::setWindowHintFromCreateInfo(const WindowCreateInfo& info)
 #endif
             m_windowTitle.append(" (OpenGL)");
             break;
+#if TARGET_PLATFORM == PLATFORM_WINDOWS
+        case RenderApi::DIRECT3D11:
+            glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+            m_windowTitle.append(" (Direct3D 11)");
+            break;
+#endif
         default:
-            assert(0);
+            throw runtime_error("[Error][Window] use unsupported API");
     }
 }
 

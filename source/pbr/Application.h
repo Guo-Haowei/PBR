@@ -9,6 +9,7 @@ class Application
 public:
     void Run();
     void Mainloop();
+    Renderer* GetRenderer() const { return m_renderer.get(); }
     static Application& GetSingleton();
 private:
     Application();
