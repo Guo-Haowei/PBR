@@ -7,3 +7,6 @@
 [submodule "external/emsdk"]
 	path = external/emsdk
 	url = https://github.com/emscripten-core/emsdk.git
+[submodule "external/glm"]
+	path = external/glm
+	url = https://github.com/g-truc/glm.git

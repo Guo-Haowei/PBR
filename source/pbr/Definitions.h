@@ -2,12 +2,17 @@
 #include <string>
 #include <memory>
 #include <iostream>
+#include <glm/glm.hpp>
 
 namespace pbr {
     using std::string;
     using std::unique_ptr;
     using std::shared_ptr;
     using std::ostream;
+    using glm::vec2;
+    using glm::vec3;
+    using glm::vec4;
+    using glm::mat4;
 
     enum class RenderApi { UNKNOWN, OPENGL, DIRECT3D11, VULKAN, METAL };
 
