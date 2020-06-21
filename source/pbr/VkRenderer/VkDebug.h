@@ -4,9 +4,84 @@
 #include <iostream>
 #include <unordered_map>
 
+#define VK_VERBOSE 1
+
+#define VK_THROW(DESC, VKRESULT) throw pbr::VkException(__LINE__, __FILE__, DESC, VKRESULT)
+
+#define VK_THROW_IF_FAILED(EXP, DESC) \
+{ \
+    VkResult _VR = (EXP); \
+    if (_VR != VK_SUCCESS) throw pbr::VkException(__LINE__, __FILE__, DESC, _VR); \
+}
+
 namespace pbr {
 
-    static const string& VkResultToString(VkResult result)
+    static const string& VkResultToString(VkResult result);
+
+    class VkException : public Exception
+    {
+    public:
+        VkException(int line, const char* file, const char* desc, VkResult vr)
+            : Exception(line, file, desc), m_result(vr)
+        {
+        }
+
+        VkException(int line, const char* file, const string& desc, VkResult vr)
+            : Exception(line, file, desc), m_result(vr)
+        {
+        }
+
+        virtual ostream& dump(ostream& os) const
+        {
+            os << "[Error] Vulkan: " << m_desc << ".\n\ton line " << m_line << ", in file [" << m_file << "]";
+            os << "\n\terror code: " << VkResultToString(m_result);
+            return os;
+        }
+    protected:
+        VkResult m_result;
+    };
+
+    static VKAPI_ATTR VkBool32 VKAPI_CALL DebugReport(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage, void* pUserData)
+    {
+        (void)flags; (void)object; (void)location; (void)messageCode; (void)pUserData; (void)pLayerPrefix; // Unused arguments
+        std::cout <<
+        "[vulkan] Debug report from ObjectType: " << objectType <<
+        " \nMessage: " << pMessage << "\n\n";
+
+        return VK_FALSE;
+    }
+
+    static void checkValidationLayers(const vector<const char*>& requestedLayers)
+    {
+        unsigned int layerCount = 0;
+        vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+        vector<VkLayerProperties> layers(layerCount);
+        vkEnumerateInstanceLayerProperties(&layerCount, layers.data());
+        vector<string> availableLayers;
+        availableLayers.reserve(layerCount);
+        for (const auto& layer : layers)
+        {
+            availableLayers.push_back(layer.layerName);
+        }
+
+#ifdef VK_VERBOSE
+        std::cout << "[Info] Vulkan: " << availableLayers.size() << " available layers:\n";
+        for (const auto& name : availableLayers)
+            std::cout << '\t' << name << '\n';
+#endif
+
+        for (const char* requestedLayer : requestedLayers)
+        {
+            bool found = false;
+            for (auto availableLayer : availableLayers)
+                if (requestedLayer == availableLayer) found = true;
+
+            if (!found)
+                VK_THROW("Failed to find layer " + string(requestedLayer), VK_ERROR_LAYER_NOT_PRESENT);
+        }
+    }
+
+    const string& VkResultToString(VkResult result)
     {
 #define VKRESULT_ENTRY(E) { E, #E }
         static const std::unordered_map<int, const string> sTable = {
@@ -62,45 +137,4 @@ namespace pbr {
         return found == sTable.end() ? sUnknown : found->second;
     }
 
-    static VKAPI_ATTR VkBool32 VKAPI_CALL DebugReport(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage, void* pUserData)
-    {
-        (void)flags; (void)object; (void)location; (void)messageCode; (void)pUserData; (void)pLayerPrefix; // Unused arguments
-        std::cout <<
-        "[vulkan] Debug report from ObjectType: " << objectType <<
-        " \nMessage: " << pMessage << "\n\n";
-
-        return VK_FALSE;
-    }
-
-    class VkException : public Exception
-    {
-    public:
-        VkException(int line, const char* file, const char* desc, VkResult vr)
-            : Exception(line, file, desc), m_result(vr)
-        {
-        }
-
-        VkException(int line, const char* file, const string& desc, VkResult vr)
-            : Exception(line, file, desc), m_result(vr)
-        {
-        }
-
-        virtual ostream& dump(ostream& os) const
-        {
-            os << "[Error] Vulkan: " << m_desc << ".\n\ton line " << m_line << ", in file [" << m_file << "]";
-            os << "\n\terror code: " << VkResultToString(m_result);
-            return os;
-        }
-    protected:
-        VkResult m_result;
-    };
 } // namespace pbr
-
-#define VK_THROW(DESC, VKRESULT) throw pbr::VkException(__LINE__, __FILE__, DESC, VKRESULT)
-
-#define VK_THROW_IF_FAILED(EXP, DESC) \
-{ \
-    VkResult _VR = (EXP); \
-    if (_VR != VK_SUCCESS) throw pbr::VkException(__LINE__, __FILE__, DESC, _VR); \
-}
-

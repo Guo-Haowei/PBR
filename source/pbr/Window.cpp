@@ -44,10 +44,6 @@ void Window::Initialize(const WindowCreateInfo& info)
 
     glfwGetWindowSize(m_pWindow, &m_windowExtent.width, &m_windowExtent.height);
     glfwGetFramebufferSize(m_pWindow, &m_framebufferExtent.width, &m_framebufferExtent.height);
-
-    std::cout << "************* Debug Info *************\n";
-    std::cout << "Window size:       " << m_windowExtent << std::endl;
-    std::cout << "Framebuffer size:  " << m_framebufferExtent << std::endl;
 }
 
 void Window::Finalize()
