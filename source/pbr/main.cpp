@@ -12,11 +12,9 @@ extern "C" {
 
 int main()
 {
-    using namespace pbr;
-    Application app;
     try
     {
-        app.Run();
+        pbr::Application::GetSingleton().Run();
     }
     catch(const std::runtime_error& e)
     {

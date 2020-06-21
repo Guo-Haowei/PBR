@@ -7,11 +7,12 @@ namespace pbr {
 class Application
 {
 public:
-    Application();
     void Run();
+    void Mainloop();
+    static Application& GetSingleton();
 private:
+    Application();
     void initialize();
-    void mainloop();
     void finalize();
 private:
     unique_ptr<Window>      m_window;

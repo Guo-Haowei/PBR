@@ -12,7 +12,7 @@ void Window::Initialize(const WindowCreateInfo& info)
 
     glfwSetErrorCallback([](int error, const char* desc)
     {
-        throw std::runtime_error("[Error][glfw] " + string(desc));
+        throw runtime_error("[Error][glfw] " + string(desc));
     });
 
     glfwInit();
@@ -23,7 +23,10 @@ void Window::Initialize(const WindowCreateInfo& info)
                                  m_windowExtent.height,
                                  m_windowTitle.c_str(),
                                  nullptr, nullptr);
-    
+
+    if (m_pWindow == nullptr)
+        throw runtime_error("[Error][glfw] failed to create glfw window");
+
     glfwSetWindowUserPointer(m_pWindow, this);
     glfwMakeContextCurrent(m_pWindow);
 }
@@ -52,6 +55,7 @@ void Window::SwapBuffers() const
 
 void Window::setWindowSizeFromCreateInfo(const WindowCreateInfo& info)
 {
+#if TARGET_PLATFORM != PLATFORM_EMSCRIPTEN
     if (info.windowScale > 0.0f)
     {
         const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
@@ -59,6 +63,7 @@ void Window::setWindowSizeFromCreateInfo(const WindowCreateInfo& info)
         m_windowExtent.height = info.windowScale * mode->height;
     }
     else
+#endif
     {
         m_windowExtent = info.extent;
     }
@@ -66,9 +71,8 @@ void Window::setWindowSizeFromCreateInfo(const WindowCreateInfo& info)
 
 void Window::setWindowHintFromCreateInfo(const WindowCreateInfo& info)
 {
-    // common
     m_windowTitle = "PBR ";
-
+    // common
     glfwWindowHint(GLFW_RESIZABLE, info.resizable);
     switch (info.renderApi)
     {

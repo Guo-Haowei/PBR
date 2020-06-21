@@ -4,3 +4,6 @@
 [submodule "external/glad"]
 	path = external/glad
 	url = https://github.com/Guo-Haowei/glad.git
+[submodule "external/emsdk"]
+	path = external/emsdk
+	url = https://github.com/emscripten-core/emsdk.git
