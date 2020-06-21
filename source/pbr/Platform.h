@@ -1,0 +1,26 @@
+#pragma once
+#define PLATFORM_WINDOWS 0
+#define PLATFORM_MACOS 1
+#define PLATFORM_EMSCRIPTEN 2
+#if defined(__emscripten__)
+#   define TARGET_PLATFORM PLATFORM_EMSCRIPTEN
+#elif defined(_WIN32)
+#   define TARGET_PLATFORM PLATFORM_WINDOWS
+#elif defined(__APPLE__)
+#   define TARGET_PLATFORM PLATFORM_MACOS
+#else
+#   pragma error "Unsupported platform"
+#endif
+
+#if TARGET_PLATFORM == PLATFORM_WINDOWS
+#   define PBR_GL_VERSION_MAJOR 4
+#   define PBR_GL_VERSION_MINOR 5
+#elif TARGET_PLATFORM == PLATFORM_MACOS
+#   define PBR_GL_VERSION_MAJOR 4
+#   define PBR_GL_VERSION_MINOR 1
+#elif TARGET_PLATFORM == PLATFORM_EMSCRIPTEN
+#   define PBR_GL_VERSION_MAJOR 3
+#   define PBR_GL_VERSION_MINOR 0
+#endif
+
+#define PBR_GL_VERSION (PBR_GL_VERSION_MAJOR * 100 + PBR_GL_VERSION_MINOR * 10)
