@@ -16,6 +16,15 @@ namespace pbr {
 
     enum class RenderApi { UNKNOWN, OPENGL, DIRECT3D11, VULKAN, METAL };
 
+    static const string& RenderApiToString(RenderApi api)
+    {
+        static const string sTable[static_cast<int>(RenderApi::METAL) + 1] = {
+            "Unknown", "OpenGL", "Direct3d 11", "Vulkan", "Metal"
+        };
+
+        return sTable[static_cast<int>(api)];
+    }
+
     template <typename T> struct Extent2
     {
         T width, height;

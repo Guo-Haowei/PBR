@@ -1,24 +1,43 @@
 #pragma once
+#include "Error.h"
 #include <Windows.h>
 #include <wrl/client.h>
 #include <dxgi.h>
-#include <stdexcept>
 #include <comdef.h>
 
 namespace pbr {
-    using Microsoft::WRL::ComPtr;
-    using std::runtime_error;
-    using std::string;
+
+    class D3dException : public Exception
+    {
+    public:
+        D3dException(int line, const char* file, const char* desc, HRESULT hr)
+            : Exception(line, file, desc), m_result(hr)
+        {
+        }
+
+        D3dException(int line, const char* file, const string& desc, HRESULT hr)
+            : Exception(line, file, desc), m_result(hr)
+        {
+        }
+
+        virtual ostream& dump(ostream& os) const
+        {
+            os << "[Error] Direct3d: " << m_desc << ".\n\ton line " << m_line << ", in file [" << m_file << "]";
+            _com_error error(m_result);
+            os << "\n\treason: " << error.ErrorMessage();
+            return os;
+        }
+    protected:
+        HRESULT m_result;
+    };
 } // namespace pbr
 
-#define THROW_IF_NOT_OK(_EXPRESSION, _ERROR) \
+#define THROW_IF_NOT_OK(EXP, DESC) \
 { \
-    HRESULT _HR = (_EXPRESSION); \
-    if (_HR != S_OK) \
-    { \
-        std::string _FULL_ERROR(_ERROR); \
-        _com_error _COM_ERROR(_HR); \
-        _FULL_ERROR.append("\n\treason: ").append(std::string(_COM_ERROR.ErrorMessage())); \
-        throw runtime_error(_FULL_ERROR); \
-    } \
+    HRESULT _HR = (EXP); \
+    if (_HR != S_OK) throw pbr::D3dException(__LINE__, __FILE__, DESC, _HR); \
 }
+
+namespace pbr {
+    using Microsoft::WRL::ComPtr;
+} // namespace pbr

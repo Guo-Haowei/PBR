@@ -51,19 +51,19 @@ void D3D11Renderer::createDevice()
         nullptr,                    // out feature levels
         m_deviceContext.GetAddressOf());
 
-    THROW_IF_NOT_OK(hr, "[Error][D3d11] failed to create d3d11 device");
+    THROW_IF_NOT_OK(hr, "Failed to create d3d11 device");
 
     THROW_IF_NOT_OK(
         m_device->QueryInterface(__uuidof(IDXGIDevice),(void**)m_dxgiDevice.GetAddressOf()),
-        "[Error][D3d11] failed to query IDXGIDevice");
+        "Failed to query IDXGIDevice");
 
     THROW_IF_NOT_OK(
         m_dxgiDevice->GetParent(__uuidof(IDXGIAdapter), (void**)m_dxgiAdapter.GetAddressOf()),
-        "[Error][D3d11] failed to query IDXGIAdapter");
+        "Failed to query IDXGIAdapter");
 
     THROW_IF_NOT_OK(
         m_dxgiAdapter->GetParent(__uuidof(IDXGIFactory), (void**)m_dxgiFactory.GetAddressOf()),
-        "[Error][D3d11] failed to query IDXGIFactory");
+        "Failed to query IDXGIFactory");
 }
 
 void D3D11Renderer::createSwapchain()
@@ -81,13 +81,13 @@ void D3D11Renderer::createSwapchain()
     desc.Windowed = TRUE;
 
     THROW_IF_NOT_OK(m_dxgiFactory->CreateSwapChain(m_device.Get(), &desc, m_swapChain.GetAddressOf()),
-        "[Error][D3d11] failed to create swap chain");
+        "Failed to create swap chain");
 }
 
 void D3D11Renderer::DumpGraphicsCardInfo()
 {
     DXGI_ADAPTER_DESC desc {};
-    THROW_IF_NOT_OK(m_dxgiAdapter->GetDesc(&desc), "[Error][D3d11] failed to get adapter description");
+    THROW_IF_NOT_OK(m_dxgiAdapter->GetDesc(&desc), "Failed to get adapter description");
 
     std::wcout << "Graphics Card:     " << desc.Description << std::endl;
 }
@@ -104,7 +104,7 @@ void D3D11Renderer::createRenderTarget()
     ComPtr<ID3D11Texture2D> backbuffer;
     m_swapChain->GetBuffer(0, IID_PPV_ARGS(backbuffer.GetAddressOf()));
     HRESULT hr = m_device->CreateRenderTargetView(backbuffer.Get(), NULL, m_immediateRenderTarget.GetAddressOf());
-    THROW_IF_NOT_OK(hr, "[Error][D3d11] failed to create immediate render target");
+    THROW_IF_NOT_OK(hr, "Failed to create immediate render target");
 }
 
 void D3D11Renderer::cleanupRenderTarget()

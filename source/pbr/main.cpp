@@ -1,6 +1,6 @@
 #include "Application.h"
+#include "Error.h"
 #include <iostream>
-#include <stdexcept>
 
 // force NV card selection
 #ifdef _WIN32
@@ -16,10 +16,10 @@ int main()
     {
         pbr::Application::GetSingleton().Run();
     }
-    catch(const std::runtime_error& e)
+    catch(const pbr::Exception& e)
     {
-        std::cerr << e.what() << '\n';
-        return 1;
+        std::cerr << e << "\n";
+        return 99;
     }
 
     return 0;

@@ -1,6 +1,6 @@
 #pragma once
 #include "Renderer.h"
-#include "vulkan/vulkan.h"
+#include "VkPrerequisites.h"
 
 namespace pbr {
 
@@ -16,7 +16,9 @@ public:
 private:
     void createVkInstance();
 private:
-    VkInstance m_instance;
+    VkInstance          m_instance;
+    VkDevice            m_device;
+    VkSwapchainKHR      m_swapChain;
 };
 
 } // namespace pbr

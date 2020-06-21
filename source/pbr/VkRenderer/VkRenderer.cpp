@@ -44,12 +44,7 @@ void VkRenderer::createVkInstance()
     info.enabledExtensionCount = glfwExtensionCount;
     info.ppEnabledExtensionNames = glfwExtensions;
     info.enabledLayerCount = 0;
-    VkResult result = vkCreateInstance(&info, nullptr, &m_instance);
-    // TODO: macro
-    if (result != VK_SUCCESS)
-    {
-        throw runtime_error("[Error][Vulkan] failed to create vulkan instance");
-    }
+    VK_THROW_IF_FAILED(vkCreateInstance(&info, nullptr, &m_instance), "Failed to create instance");
 }
 
 } // namespace pbr

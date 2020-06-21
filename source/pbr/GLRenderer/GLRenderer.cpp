@@ -17,7 +17,7 @@ void GLRenderer::Initialize()
 
 #if TARGET_PLATFORM != PLATFORM_EMSCRIPTEN
     if (gladLoadGL() == 0)
-        throw runtime_error("[Error][glad] failed to load glad functions");
+        THROW_EXCEPTION("GLAD: Failed to load glad functions");
 #endif
 
 #if PBR_GL_VERSION >= 430

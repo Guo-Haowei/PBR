@@ -1,7 +1,6 @@
 #include "Window.h"
 #include "Error.h"
 #include "Application.h"
-#include <stdexcept>
 
 namespace pbr {
 
@@ -11,7 +10,7 @@ void Window::Initialize(const WindowCreateInfo& info)
 
     glfwSetErrorCallback([](int error, const char* desc)
     {
-        throw runtime_error("[Error][glfw] " + string(desc));
+        THROW_EXCEPTION(desc);
     });
 
     glfwInit();
@@ -24,7 +23,7 @@ void Window::Initialize(const WindowCreateInfo& info)
                                  nullptr, nullptr);
 
     if (m_pWindow == nullptr)
-        throw runtime_error("[Error][glfw] failed to create glfw window");
+        THROW_EXCEPTION("GLFW: failed to create window");
 
     glfwSetWindowUserPointer(m_pWindow, this);
 
@@ -92,8 +91,8 @@ void Window::setWindowSizeFromCreateInfo(const WindowCreateInfo& info)
 void Window::setWindowHintFromCreateInfo(const WindowCreateInfo& info)
 {
     m_windowTitle = "PBR ";
-    // common
     glfwWindowHint(GLFW_RESIZABLE, info.resizable);
+
     switch (info.renderApi)
     {
         case RenderApi::OPENGL:
@@ -102,23 +101,22 @@ void Window::setWindowHintFromCreateInfo(const WindowCreateInfo& info)
 #if PBR_GL_VERSION >= 430 && defined(_DEBUG)
             glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 #endif
-            m_windowTitle.append(" (OpenGL)");
             break;
 #if TARGET_PLATFORM == PLATFORM_WINDOWS
         case RenderApi::DIRECT3D11:
             glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-            m_windowTitle.append(" (Direct3D 11)");
             break;
 #endif
 #if TARGET_PLATFORM != PLATFORM_EMSCRIPTEN
         case RenderApi::VULKAN:
             glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-            m_windowTitle.append(" (Vulkan)");
             break;
 #endif
         default:
-            throw runtime_error("[Error][Window] use unsupported API");
+            THROW_EXCEPTION("Use unsupported API: " + RenderApiToString(info.renderApi));
     }
+
+    m_windowTitle.append(" (").append(RenderApiToString(info.renderApi)).append(")");
 }
 
 } // namespace pbr
