@@ -1,8 +1,5 @@
 #include "D3D11Renderer.h"
 #include "Window.h"
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <GLFW/glfw3.h>
-#include <GLFW/glfw3native.h>
 #include <iostream>
 #pragma comment(lib, "d3d11.lib")
 
@@ -22,7 +19,7 @@ void D3D11Renderer::Initialize()
 
 void D3D11Renderer::Render()
 {
-    static const float clearColor[4] = { 0.5f, 0.5f, 0.5f, 1.0f };
+    static const float clearColor[4] = { 0.3f, 0.4f, 0.3f, 1.0f };
     m_deviceContext->ClearRenderTargetView(m_immediateRenderTarget.Get(), clearColor);
     // const Extent2i& extent = m_pWindow->GetFrameBufferExtent();
     m_swapChain->Present(0, 0);

@@ -45,7 +45,7 @@ void GLRenderer::Render()
 {
     const Extent2i& extent = m_pWindow->GetFrameBufferExtent();
     glViewport(0, 0, extent.width, extent.height);
-    glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+    glClearColor(0.3f, 0.4f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 }
 

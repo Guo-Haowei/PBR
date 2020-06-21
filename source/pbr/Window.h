@@ -1,8 +1,7 @@
 #pragma once
 #include "Definitions.h"
+#include "Platform.h"
 #include <string>
-
-struct GLFWwindow;
 
 namespace pbr {
 

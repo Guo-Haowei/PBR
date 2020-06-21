@@ -1,8 +1,6 @@
 #include "Window.h"
-#include "Platform.h"
 #include "Error.h"
 #include "Application.h"
-#include <GLFW/glfw3.h>
 #include <stdexcept>
 
 namespace pbr {
@@ -110,6 +108,12 @@ void Window::setWindowHintFromCreateInfo(const WindowCreateInfo& info)
         case RenderApi::DIRECT3D11:
             glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
             m_windowTitle.append(" (Direct3D 11)");
+            break;
+#endif
+#if TARGET_PLATFORM != PLATFORM_EMSCRIPTEN
+        case RenderApi::VULKAN:
+            glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+            m_windowTitle.append(" (Vulkan)");
             break;
 #endif
         default:
