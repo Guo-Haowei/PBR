@@ -2,7 +2,7 @@
 #include "GLPrerequisites.h"
 #include <iostream>
 
-#if PBR_GL_VERSION >= 430
+#if PBR_GL_VERSION >= 430 && defined(PBR_DEBUG)
 namespace pbr { namespace internal {
 
 void APIENTRY glDebugCb(GLenum source, GLenum type, unsigned int id, GLenum severity, GLsizei length, const char *message, const void *userParam)

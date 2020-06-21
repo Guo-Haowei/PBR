@@ -3,10 +3,6 @@
 #include <assert.h>
 #include <ostream>
 
-#if defined(_DEBUG)
-#else
-#endif
-
 namespace pbr {
     using std::string;
 

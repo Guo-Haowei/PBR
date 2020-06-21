@@ -98,7 +98,7 @@ void Window::setWindowHintFromCreateInfo(const WindowCreateInfo& info)
         case RenderApi::OPENGL:
             glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, PBR_GL_VERSION_MAJOR);
             glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, PBR_GL_VERSION_MINOR);
-#if PBR_GL_VERSION >= 430 && defined(_DEBUG)
+#if PBR_GL_VERSION >= 430 && defined(PBR_DEBUG)
             glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
 #endif
             break;

@@ -15,10 +15,13 @@ public:
     virtual void Finalize() override;
 private:
     void createVkInstance();
+    void setDebugCallback();
+    vector<string> getAvailalbeLayers();
 private:
-    VkInstance          m_instance;
-    VkDevice            m_device;
-    VkSwapchainKHR      m_swapChain;
+    VkInstance                  m_instance;
+    VkDebugReportCallbackEXT    m_debugHandle = VK_NULL_HANDLE;
+    VkDevice                    m_device;
+    VkSwapchainKHR              m_swapChain;
 };
 
 } // namespace pbr

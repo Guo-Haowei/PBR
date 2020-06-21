@@ -20,7 +20,7 @@ void GLRenderer::Initialize()
         THROW_EXCEPTION("GLAD: Failed to load glad functions");
 #endif
 
-#if PBR_GL_VERSION >= 430
+#if PBR_GL_VERSION >= 430 && defined(PBR_DEBUG)
     int flags;
     glGetIntegerv(GL_CONTEXT_FLAGS, &flags);
     if (flags & GL_CONTEXT_FLAG_DEBUG_BIT)
