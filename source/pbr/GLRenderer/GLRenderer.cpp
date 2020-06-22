@@ -32,6 +32,9 @@ void GLRenderer::Initialize()
         glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
     }
 #endif
+
+    glEnable(GL_CULL_FACE);
+    glFrontFace(GL_CW);
 }
 
 void GLRenderer::DumpGraphicsCardInfo()

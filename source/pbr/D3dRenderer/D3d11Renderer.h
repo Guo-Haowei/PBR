@@ -35,6 +35,9 @@ private:
     ComPtr<ID3D11VertexShader>      m_vert;
     ComPtr<ID3D11PixelShader>       m_pixel;
     ComPtr<ID3DBlob>                m_vertBlob;
+    // input
+    ComPtr<ID3D11InputLayout>       m_inputLayout;
+    ComPtr<ID3D11Buffer>            m_vertexBuffer;
 };
 
 } // namespace pbr
