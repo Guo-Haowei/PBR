@@ -2,7 +2,7 @@
 #include "core/Renderer.h"
 #include "GLHelpers.h"
 
-namespace pbr {
+namespace pbr { namespace gl {
 
 class GLRenderer : public Renderer
 {
@@ -11,7 +11,7 @@ public:
     virtual void Initialize() override;
     virtual void DumpGraphicsCardInfo() override;
     virtual void PrepareGpuResources() override;
-    virtual void Render() override;
+    virtual void Render(const Camera& camera) override;
     virtual void Resize(const Extent2i& extent) override;
     virtual void Finalize() override;
 private:
@@ -22,4 +22,4 @@ private:
     GLuint m_triangleVao = 0;
 };
 
-} // namespace pbr
+} } // namespace pbr::gl

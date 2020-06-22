@@ -68,6 +68,11 @@ void Window::SwapBuffers() const
         glfwSwapBuffers(m_pWindow);
 }
 
+float Window::GetAspectRatio() const
+{
+    return static_cast<float>(m_framebufferExtent.width) / static_cast<float>(m_framebufferExtent.height);
+}
+
 void Window::setWindowSizeFromCreateInfo(const WindowCreateInfo& info)
 {
 #if TARGET_PLATFORM != PLATFORM_EMSCRIPTEN

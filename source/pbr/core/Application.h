@@ -1,6 +1,7 @@
 #pragma once
 #include "Window.h"
 #include "Renderer.h"
+#include "Camera.h"
 
 namespace pbr {
 
@@ -18,6 +19,7 @@ private:
 private:
     unique_ptr<Window>      m_window;
     unique_ptr<Renderer>    m_renderer;
+    Camera                  m_camera;
 };
 
 } // namespace pbr

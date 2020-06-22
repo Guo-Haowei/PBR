@@ -13,6 +13,7 @@ public:
     bool ShouldClose() const;
     void PollEvents() const;
     void SwapBuffers() const;
+    float GetAspectRatio() const;
     inline RenderApi GetRenderApi() const { return m_renderApi; }
     GLFWwindow* GetInternalWindow() const { return m_pWindow; }
     const Extent2i& GetWindowExtent() const { return m_windowExtent; }

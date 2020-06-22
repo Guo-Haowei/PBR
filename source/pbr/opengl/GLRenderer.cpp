@@ -1,13 +1,13 @@
 #include "base/Error.h"
 #include "core/Window.h"
+#include "core/Camera.h"
 #include "GLRenderer.h"
 #include "GLPrerequisites.h"
-#include "GLDebugCb.h"
 #include "Utility.h"
 using std::cout;
 using std::endl;
 
-namespace pbr {
+namespace pbr { namespace gl {
 
 GLRenderer::GLRenderer(const Window* pWindow) : Renderer(pWindow)
 {
@@ -28,7 +28,7 @@ void GLRenderer::Initialize()
     {
         glEnable(GL_DEBUG_OUTPUT);
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-        glDebugMessageCallback(internal::glDebugCb, nullptr);
+        glDebugMessageCallback(gl::DebugCallback, nullptr);
         glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DONT_CARE, 0, nullptr, GL_TRUE);
     }
 #endif
@@ -45,13 +45,18 @@ void GLRenderer::DumpGraphicsCardInfo()
     cout << "Version GLSL:      " << glGetString(GL_SHADING_LANGUAGE_VERSION) << endl;
 }
 
-void GLRenderer::Render()
+void GLRenderer::Render(const Camera& camera)
 {
+    // set viewport
     const Extent2i& extent = m_pWindow->GetFrameBufferExtent();
     glViewport(0, 0, extent.width, extent.height);
+    // clear screen
     glClearColor(0.3f, 0.4f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+    // drawing
     m_pbrProgram.use();
+    m_pbrProgram.setUniform("u_per_frame.view", camera.viewMatrix());
+    m_pbrProgram.setUniform("u_per_frame.projection", camera.projectionMatrix());
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
@@ -101,4 +106,4 @@ void GLRenderer::compileShaders()
     }
 }
 
-} // namespace pbr
+} } // namespace pbr::gl

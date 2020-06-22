@@ -18,7 +18,7 @@ void D3d11Renderer::Initialize()
     createRenderTarget();
 }
 
-void D3d11Renderer::Render()
+void D3d11Renderer::Render(const Camera& camera)
 {
     // clear
     static const float clearColor[4] = { 0.4f, 0.3f, 0.3f, 1.0f };

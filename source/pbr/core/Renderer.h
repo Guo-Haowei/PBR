@@ -5,6 +5,7 @@
 namespace pbr {
 
 class Window;
+class Camera;
 
 class Renderer
 {
@@ -13,7 +14,7 @@ public:
     virtual void Initialize() = 0;
     virtual void DumpGraphicsCardInfo() = 0;
     virtual void PrepareGpuResources() = 0;
-    virtual void Render() = 0;
+    virtual void Render(const Camera& camera) = 0;
     virtual void Resize(const Extent2i& extent) = 0;
     virtual void Finalize() = 0;
     virtual ~Renderer() = default;

@@ -51,7 +51,7 @@ void VkRenderer::PrepareGpuResources()
 {
 }
 
-void VkRenderer::Render()
+void VkRenderer::Render(const Camera& camera)
 {
     // VkPresentInfoKHR presentInfo {};
     // presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;

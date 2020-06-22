@@ -1,6 +1,7 @@
 #include "Application.h"
 #include "base/Platform.h"
 #include "base/Config.h"
+#include "glm/gtc/matrix_transform.hpp"
 
 namespace pbr {
 
@@ -44,12 +45,18 @@ void Application::initialize()
     m_renderer->Initialize();
     m_renderer->DumpGraphicsCardInfo();
     m_renderer->PrepareGpuResources();
+
+    // initialize camera
+    mat4 transform = glm::translate(mat4(1.0f), vec3(0.0f, 0.0f, 3.0f));
+    m_camera.setTransformation(transform);
 }
 
 void Application::Mainloop()
 {
     m_window->PollEvents();
-    m_renderer->Render();
+    // set camera aspect
+    m_camera.setAspect(m_window->GetAspectRatio());
+    m_renderer->Render(m_camera);
     m_window->SwapBuffers();
 }
 

@@ -1,5 +1,6 @@
 ADD_LIBRARY(pbr
     core/Application.cpp
+    core/Camera.cpp
     core/Renderer.cpp
     core/Window.cpp
     Utility.cpp
