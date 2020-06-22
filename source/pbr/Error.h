@@ -5,6 +5,7 @@
 
 namespace pbr {
     using std::string;
+    using std::ostream;
 
     class Exception
     {
@@ -38,3 +39,16 @@ namespace pbr {
 } // namespace pbr
 
 #define THROW_EXCEPTION(DESC) throw pbr::Exception(__LINE__, __FILE__, DESC)
+
+#ifdef PBR_VERBOSE
+#define SHADER_COMPILING_START_INFO(shader) \
+    std::cout << "--------------------------------------------\n"; \
+    std::cout << "[Log] compiling shader " << shader << std::endl;
+
+#define SHADER_COMPILING_END_INFO(shader) \
+    std::cout << "[Log] shader " << shader << " compiled successfully\n"; \
+    std::cout << "--------------------------------------------" << std::endl;
+#else
+#define SHADER_COMPILING_START_INFO(shader)
+#define SHADER_COMPILING_END_INFO(shader)
+#endif

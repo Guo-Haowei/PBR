@@ -1,14 +1,13 @@
 #pragma once
 #include "Renderer.h"
-#include "D3DPrerequisites.h"
-#include <d3d11.h>
+#include "D3dPrerequisites.h"
 
 namespace pbr {
 
-class D3D11Renderer : public Renderer
+class D3d11Renderer : public Renderer
 {
 public:
-    D3D11Renderer(const Window* pWindow);
+    D3d11Renderer(const Window* pWindow);
     virtual void Initialize() override;
     virtual void DumpGraphicsCardInfo() override;
     virtual void PrepareGpuResources() override;
@@ -20,6 +19,7 @@ private:
     void createSwapchain();
     void createRenderTarget();
     void cleanupRenderTarget();
+    void compileShaders();
 private:
     HWND                            m_hwnd;
     ComPtr<ID3D11Device>            m_device;
@@ -31,6 +31,10 @@ private:
     // TODO: refactor
     // render target
     ComPtr<ID3D11RenderTargetView>  m_immediateRenderTarget;
+    // shaders
+    ComPtr<ID3D11VertexShader>      m_vert;
+    ComPtr<ID3D11PixelShader>       m_pixel;
+    ComPtr<ID3DBlob>                m_vertBlob;
 };
 
 } // namespace pbr

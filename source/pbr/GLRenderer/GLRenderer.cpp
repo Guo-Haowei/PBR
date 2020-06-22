@@ -83,19 +83,6 @@ void GLRenderer::PrepareGpuResources()
 #define PBR_VERT "pbr.vert"
 #define PBR_FRAG "pbr.frag"
 
-#ifdef PBR_VERBOSE
-#define SHADER_COMPILING_START_INFO(shader) \
-    std::cout << "--------------------------------------------\n"; \
-    std::cout << "[Log] compiling shader " << shader << std::endl;
-
-#define SHADER_COMPILING_END_INFO(shader) \
-    std::cout << "[Log] shader " << shader << " compiled successfully\n"; \
-    std::cout << "--------------------------------------------" << std::endl;
-#else
-#define SHADER_COMPILING_START_INFO(shader)
-#define SHADER_COMPILING_END_INFO(shader)
-#endif
-
 void GLRenderer::compileShaders()
 {
     {

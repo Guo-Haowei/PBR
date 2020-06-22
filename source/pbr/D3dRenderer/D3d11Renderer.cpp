@@ -1,16 +1,16 @@
-#include "D3D11Renderer.h"
-#include "D3DDebug.h"
+#include "D3d11Renderer.h"
+#include "D3dDebug.h"
+#include "D3d11Helpers.h"
 #include "Window.h"
 #include <iostream>
-#pragma comment(lib, "d3d11.lib")
 
 namespace pbr {
 
-D3D11Renderer::D3D11Renderer(const Window* pWindow) : Renderer(pWindow)
+D3d11Renderer::D3d11Renderer(const Window* pWindow) : Renderer(pWindow)
 {
 }
 
-void D3D11Renderer::Initialize()
+void D3d11Renderer::Initialize()
 {
     m_hwnd = glfwGetWin32Window(m_pWindow->GetInternalWindow());
     createDevice();
@@ -18,7 +18,7 @@ void D3D11Renderer::Initialize()
     createRenderTarget();
 }
 
-void D3D11Renderer::Render()
+void D3d11Renderer::Render()
 {
     static const float clearColor[4] = { 0.4f, 0.3f, 0.3f, 1.0f };
     m_deviceContext->ClearRenderTargetView(m_immediateRenderTarget.Get(), clearColor);
@@ -27,16 +27,16 @@ void D3D11Renderer::Render()
     // m_swapChain->Present(1, 0);
 }
 
-void D3D11Renderer::Finalize()
+void D3d11Renderer::Finalize()
 {
 
 }
 
-void D3D11Renderer::createDevice()
+void D3d11Renderer::createDevice()
 {
     D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
     UINT createDeviceFlags = 0;
-#ifdef _DEBUG
+#ifdef PBR_DEBUG
     createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif // DEBUG
 
@@ -52,22 +52,22 @@ void D3D11Renderer::createDevice()
         nullptr,                    // out feature levels
         m_deviceContext.GetAddressOf());
 
-    THROW_IF_NOT_OK(hr, "Failed to create d3d11 device");
+    D3D_THROW_IF_FAILED(hr, "Failed to create d3d11 device");
 
-    THROW_IF_NOT_OK(
+    D3D_THROW_IF_FAILED(
         m_device->QueryInterface(__uuidof(IDXGIDevice),(void**)m_dxgiDevice.GetAddressOf()),
         "Failed to query IDXGIDevice");
 
-    THROW_IF_NOT_OK(
+    D3D_THROW_IF_FAILED(
         m_dxgiDevice->GetParent(__uuidof(IDXGIAdapter), (void**)m_dxgiAdapter.GetAddressOf()),
         "Failed to query IDXGIAdapter");
 
-    THROW_IF_NOT_OK(
+    D3D_THROW_IF_FAILED(
         m_dxgiAdapter->GetParent(__uuidof(IDXGIFactory), (void**)m_dxgiFactory.GetAddressOf()),
         "Failed to query IDXGIFactory");
 }
 
-void D3D11Renderer::createSwapchain()
+void D3d11Renderer::createSwapchain()
 {
     // TODO: msaa
     DXGI_SWAP_CHAIN_DESC desc {};
@@ -81,41 +81,71 @@ void D3D11Renderer::createSwapchain()
     desc.SampleDesc.Quality = 0;
     desc.Windowed = TRUE;
 
-    THROW_IF_NOT_OK(m_dxgiFactory->CreateSwapChain(m_device.Get(), &desc, m_swapChain.GetAddressOf()),
+    D3D_THROW_IF_FAILED(m_dxgiFactory->CreateSwapChain(m_device.Get(), &desc, m_swapChain.GetAddressOf()),
         "Failed to create swap chain");
 }
 
-void D3D11Renderer::DumpGraphicsCardInfo()
+void D3d11Renderer::DumpGraphicsCardInfo()
 {
     DXGI_ADAPTER_DESC desc {};
-    THROW_IF_NOT_OK(m_dxgiAdapter->GetDesc(&desc), "Failed to get adapter description");
+    D3D_THROW_IF_FAILED(m_dxgiAdapter->GetDesc(&desc), "Failed to get adapter description");
 
     std::wcout << "Graphics Card:     " << desc.Description << std::endl;
 }
 
-void D3D11Renderer::PrepareGpuResources()
+void D3d11Renderer::PrepareGpuResources()
 {
+    compileShaders();
 }
 
-void D3D11Renderer::Resize(const Extent2i& extent)
+void D3d11Renderer::Resize(const Extent2i& extent)
 {
     cleanupRenderTarget();
     m_swapChain->ResizeBuffers(0, extent.width, extent.height, DXGI_FORMAT_UNKNOWN, 0);
     createRenderTarget();
 }
 
-void D3D11Renderer::createRenderTarget()
+void D3d11Renderer::createRenderTarget()
 {
     ComPtr<ID3D11Texture2D> backbuffer;
     m_swapChain->GetBuffer(0, IID_PPV_ARGS(backbuffer.GetAddressOf()));
     HRESULT hr = m_device->CreateRenderTargetView(backbuffer.Get(), NULL, m_immediateRenderTarget.GetAddressOf());
-    THROW_IF_NOT_OK(hr, "Failed to create immediate render target");
+    D3D_THROW_IF_FAILED(hr, "Failed to create immediate render target");
 }
 
-void D3D11Renderer::cleanupRenderTarget()
+void D3d11Renderer::cleanupRenderTarget()
 {
     if (m_immediateRenderTarget != nullptr)
         m_immediateRenderTarget->Release();
+}
+
+// shaders
+#define PBR_SHADER "pbr.hlsl"
+
+void D3d11Renderer::compileShaders()
+{
+    HRESULT hr;
+    {
+        SHADER_COMPILING_START_INFO(PBR_SHADER ".vert");
+        HlslShader::CompileShader(HLSL_DIR PBR_SHADER, "vs_main", "vs_5_0", m_vertBlob);
+        hr = m_device->CreateVertexShader(
+            m_vertBlob->GetBufferPointer(),
+            m_vertBlob->GetBufferSize(),
+            NULL,
+            m_vert.GetAddressOf());
+        D3D_THROW_IF_FAILED(hr, "Failed to create vertex shader");
+        SHADER_COMPILING_END_INFO(PBR_SHADER ".vert");
+        SHADER_COMPILING_START_INFO(PBR_SHADER ".frag");
+        ComPtr<ID3DBlob> pixelBlob;
+        HlslShader::CompileShader(HLSL_DIR PBR_SHADER, "ps_main", "ps_5_0", pixelBlob);
+        hr = m_device->CreatePixelShader(
+            pixelBlob->GetBufferPointer(),
+            pixelBlob->GetBufferSize(),
+            NULL,
+            m_pixel.GetAddressOf());
+        D3D_THROW_IF_FAILED(hr, "Failed to create pixel shader");
+        SHADER_COMPILING_END_INFO(PBR_SHADER ".frag");
+    }
 }
 
 } // namespace pbr

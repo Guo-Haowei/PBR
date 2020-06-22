@@ -23,8 +23,8 @@ GLuint GlslProgram::createShaderFromString(const string& source, GLenum type)
     {
         glGetShaderInfoLog(handle, MAX_LOG_SIZE, NULL, log);
         log[MAX_LOG_SIZE - 1] = '\0'; // prevent overflow
-        string error = "glsl: Failed to compile shader\n" + string(log);
-        error.pop_back(); // remove new line
+        string error("glsl: Failed to compile shader\n");
+        error.append(log).pop_back(); // remove new line
         THROW_EXCEPTION(error);
     }
 
@@ -46,8 +46,8 @@ GlslProgram GlslProgram::create(GLuint vertHandle, GLuint fragHandle)
     {
         glGetProgramInfoLog(handle, MAX_LOG_SIZE, NULL, log);
         log[MAX_LOG_SIZE - 1] = '\0'; // prevent overflow
-        string error = "glsl: Failed to link shader\n" + string(log);
-        error.pop_back(); // remove new line
+        string error("glsl: Failed to link program\n");
+        error.append(log).pop_back(); // remove new line
         THROW_EXCEPTION(error);
     }
 
