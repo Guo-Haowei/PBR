@@ -1,7 +1,7 @@
 #version 410 core
-layout (location = 0) out vec4 out_color;
+layout (location = 0) in vec3 pass_color;
 
-in vec3 pass_color;
+layout (location = 0) out vec4 out_color;
 
 void main()
 {

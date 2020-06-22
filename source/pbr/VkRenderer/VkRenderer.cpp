@@ -1,6 +1,8 @@
 #include "VkRenderer.h"
 #include "VkDebug.h"
+#include "VkHelpers.h"
 #include "Window.h"
+#include "Utility.h"
 #include <array>
 #include <set>
 
@@ -31,7 +33,6 @@ void VkRenderer::Initialize()
     createLogicalDevice();
     createSwapChain();
     createSwapChainImageViews();
-    createPipelineLayout();
     createRenderPass();
     createGraphicsPipeline();
     createSwapChainFramebuffers();
@@ -312,10 +313,6 @@ void VkRenderer::createSwapChain()
     m_swapChainExtent = extent;
 }
 
-void VkRenderer::createPipelineLayout()
-{
-}
-
 void VkRenderer::createRenderPass()
 {
     VkAttachmentDescription colorAttachment {};
@@ -361,7 +358,7 @@ void VkRenderer::createSwapChainImageViews()
         imageViewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
         imageViewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
         imageViewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-        imageViewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY; 
+        imageViewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
         imageViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         imageViewInfo.subresourceRange.baseMipLevel = 0;
         imageViewInfo.subresourceRange.levelCount = 1;
@@ -376,8 +373,22 @@ void VkRenderer::createSwapChainImageViews()
 void VkRenderer::createGraphicsPipeline()
 {
     // shader
-    VkShaderModule vertexShader = VK_NULL_HANDLE;
-    VkShaderModule fragmentShader = VK_NULL_HANDLE;
+    VkShaderModule vertexShaderModule = createShaderModuleFromFile(SPIRV_DIR "pbr.vert.spirv", m_logicalDevice, m_allocator);
+    VkShaderModule fragmentShaderModule = createShaderModuleFromFile(SPIRV_DIR "pbr.frag.spirv", m_logicalDevice, m_allocator);
+
+    VkPipelineShaderStageCreateInfo vertCreateInfo {};
+    vertCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    vertCreateInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+    vertCreateInfo.module = vertexShaderModule;
+    vertCreateInfo.pName = "main";
+
+    VkPipelineShaderStageCreateInfo fragCreateInfo {};
+    fragCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    fragCreateInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    fragCreateInfo.module = fragmentShaderModule;
+    fragCreateInfo.pName = "main";
+
+    VkPipelineShaderStageCreateInfo shaderStages[] = { vertCreateInfo, fragCreateInfo };
 
     // pipeline layout
     VkPipelineLayoutCreateInfo pipelineLayoutInfo {};
@@ -390,6 +401,10 @@ void VkRenderer::createGraphicsPipeline()
 
     VkGraphicsPipelineCreateInfo pipelineInfo {};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    // shader stages
+    pipelineInfo.stageCount = 2;
+    pipelineInfo.pStages = shaderStages;
+    // vertex input layout
     pipelineInfo.layout = m_pipelineLayout;
     pipelineInfo.renderPass = m_renderPass;
     pipelineInfo.subpass = 0;
@@ -399,6 +414,8 @@ void VkRenderer::createGraphicsPipeline()
         "Failed to create graphics pipeline");
 
     // destroy shader module
+    vkDestroyShaderModule(m_logicalDevice, vertexShaderModule, m_allocator);
+    vkDestroyShaderModule(m_logicalDevice, fragmentShaderModule, m_allocator);
 }
 
 void VkRenderer::createSwapChainFramebuffers()

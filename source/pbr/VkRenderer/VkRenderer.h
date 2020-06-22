@@ -35,7 +35,6 @@ private:
     void createLogicalDevice();
     void createSwapChain();
     void createSwapChainImageViews();
-    void createPipelineLayout();
     void createRenderPass();
     void createGraphicsPipeline();
     void createSwapChainFramebuffers();

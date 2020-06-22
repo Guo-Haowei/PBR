@@ -61,5 +61,6 @@
 #   define GLSL_DIR DATA_DIR "shaders/glsl/"
 #endif
 #define HLSL_DIR DATA_DIR "shaders/hlsl/"
+#define SPIRV_DIR DATA_DIR "shaders/spirv/"
 
 #define PBR_VERBOSE 1
