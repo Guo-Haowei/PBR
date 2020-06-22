@@ -1,10 +1,12 @@
 #include "VkRenderer.h"
 #include "VkDebug.h"
 #include "Window.h"
+#include <array>
 #include <set>
 
 namespace pbr {
     using std::set;
+    using std::array;
 } // namespace pbr
 
 namespace pbr {
@@ -27,6 +29,7 @@ void VkRenderer::Initialize()
     createSurface();
     pickPhysicalDevice();
     createLogicalDevice();
+    createSwapChain();
 }
 
 void VkRenderer::DumpGraphicsCardInfo()
@@ -38,7 +41,11 @@ void VkRenderer::DumpGraphicsCardInfo()
 
 void VkRenderer::Render()
 {
-
+    // VkPresentInfoKHR presentInfo {};
+    // presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    // presentInfo.swapchainCount = 1;
+    // presentInfo.pSwapchains = &m_swapChain;
+    // vkQueuePresentKHR(m_presentQueue, &presentInfo);
 }
 
 void VkRenderer::Resize(const Extent2i& extent)
@@ -48,7 +55,10 @@ void VkRenderer::Resize(const Extent2i& extent)
 
 void VkRenderer::Finalize()
 {
-    vkDestroyDevice(m_device, m_allocator);
+    for (auto& imageView : m_swapChainImageViews)
+        vkDestroyImageView(m_logicalDevice, imageView, m_allocator);
+    vkDestroySwapchainKHR(m_logicalDevice, m_swapChain, m_allocator);
+    vkDestroyDevice(m_logicalDevice, m_allocator);
 #ifdef PBR_DEBUG
     auto vkDestroyDebugReportCallbackEXT =
         (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(m_instance, "vkDestroyDebugReportCallbackEXT");
@@ -156,7 +166,10 @@ void VkRenderer::pickPhysicalDevice()
 
 void VkRenderer::createLogicalDevice()
 {
+    // extension
+    vector<const char*> deviceExtensions = { "VK_KHR_swapchain" };
     float queuePriority = 1.0f;
+
     set<uint32_t> queueFamilySet = { m_queueFamily.graphicsFamily.value(), m_queueFamily.presentFamily.value() };
     vector<VkDeviceQueueCreateInfo> deviceQueueInfos;
     for (uint32_t index : queueFamilySet)
@@ -175,16 +188,143 @@ void VkRenderer::createLogicalDevice()
     deviceInfo.queueCreateInfoCount = deviceQueueInfos.size();
     deviceInfo.pQueueCreateInfos = deviceQueueInfos.data();
     deviceInfo.pEnabledFeatures = &features;
+    deviceInfo.enabledExtensionCount = deviceExtensions.size();
+    deviceInfo.ppEnabledExtensionNames = deviceExtensions.data();
 #ifdef PBR_DEBUG
     deviceInfo.enabledLayerCount = g_requestedLayers.size();
     deviceInfo.ppEnabledLayerNames = g_requestedLayers.data();
 #endif
 
-    VK_THROW_IF_FAILED(vkCreateDevice(m_physicalDevice, &deviceInfo, m_allocator, &m_device),
+    VK_THROW_IF_FAILED(vkCreateDevice(m_physicalDevice, &deviceInfo, m_allocator, &m_logicalDevice),
         "Failed to create logical device");
 
-    vkGetDeviceQueue(m_device, m_queueFamily.graphicsFamily.value(), 0, &m_graphicsQueue);
-    vkGetDeviceQueue(m_device, m_queueFamily.presentFamily.value(), 0, &m_presentQueue);
+    vkGetDeviceQueue(m_logicalDevice, m_queueFamily.graphicsFamily.value(), 0, &m_graphicsQueue);
+    vkGetDeviceQueue(m_logicalDevice, m_queueFamily.presentFamily.value(), 0, &m_presentQueue);
+}
+
+void VkRenderer::createSwapChain()
+{
+    // query support
+    VkSurfaceCapabilitiesKHR surfaceCapabilities;
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_physicalDevice, m_surface, &surfaceCapabilities);
+
+    uint32_t count;
+    // surface format
+    count = 0;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(m_physicalDevice, m_surface, &count, nullptr);
+    if (count == 0)
+        THROW_EXCEPTION("Vulkan: Failed to obtain any surface formats");
+    vector<VkSurfaceFormatKHR> formats(count);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(m_physicalDevice, m_surface, &count, formats.data());
+    // present mode
+    count = 0;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(m_physicalDevice, m_surface, &count, nullptr);
+    if (count == 0)
+        THROW_EXCEPTION("Vulkan: Failed to obtain any present modes");
+    vector<VkPresentModeKHR> presentModes(count);
+    vkGetPhysicalDeviceSurfacePresentModesKHR(m_physicalDevice, m_surface, &count, presentModes.data());
+
+    // choose format
+    VkSurfaceFormatKHR surfaceFormat = formats.front();
+    for (const auto& available : formats)
+    {
+        if (available.format == VK_FORMAT_B8G8R8A8_SRGB && available.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+        {
+            surfaceFormat = available;
+            break;
+        }
+    }
+
+    // choose present mode
+    VkPresentModeKHR swapchainPresentMode = VK_PRESENT_MODE_FIFO_KHR;
+    for (const auto& available : presentModes)
+    {
+        if (available == VK_PRESENT_MODE_MAILBOX_KHR)
+        {
+            swapchainPresentMode = available;
+            break;
+        }
+    }
+
+    // swapchain extent
+    VkExtent2D extent;
+    if (surfaceCapabilities.currentExtent.width != UINT32_MAX)
+    {
+        extent = surfaceCapabilities.currentExtent;
+    }
+    else
+    {
+        const Extent2i& windowExtent = m_pWindow->GetFrameBufferExtent();
+        extent.width = glm::clamp((uint32_t)windowExtent.width, surfaceCapabilities.minImageExtent.width, surfaceCapabilities.maxImageExtent.width);
+        extent.height = glm::clamp((uint32_t)windowExtent.height, surfaceCapabilities.minImageExtent.height, surfaceCapabilities.maxImageExtent.height);
+    }
+
+    // image count
+    uint32_t imageCount = surfaceCapabilities.minImageCount + 1;
+    if (surfaceCapabilities.maxImageCount > 0 && imageCount > surfaceCapabilities.maxImageCount)
+        imageCount = surfaceCapabilities.maxImageCount;
+
+    // create
+    VkSwapchainCreateInfoKHR info {};
+    info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    info.surface = m_surface;
+    info.minImageCount = imageCount;
+    info.imageFormat = surfaceFormat.format;
+    info.imageColorSpace = surfaceFormat.colorSpace;
+    info.imageExtent = extent;
+    info.imageArrayLayers = 1;
+    info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+    array<uint32_t, 2> queueFamilies = { m_queueFamily.graphicsFamily.value(), m_queueFamily.presentFamily.value() };
+    if (queueFamilies[0] != queueFamilies[1])
+    {
+        info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+        info.queueFamilyIndexCount = queueFamilies.size();
+        info.pQueueFamilyIndices = queueFamilies.data();
+    }
+    else
+    {
+        info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    }
+
+    // TODO: configure NDC
+    info.preTransform = surfaceCapabilities.currentTransform;
+    info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    info.presentMode = swapchainPresentMode;
+    info.clipped = VK_TRUE;
+    info.oldSwapchain = VK_NULL_HANDLE;
+
+    VK_THROW_IF_FAILED(vkCreateSwapchainKHR(m_logicalDevice, &info, m_allocator, &m_swapChain),
+        "Failed to create swap chain");
+
+    vkGetSwapchainImagesKHR(m_logicalDevice, m_swapChain, &imageCount, nullptr);
+    m_swapChainImages.resize(imageCount);
+    vkGetSwapchainImagesKHR(m_logicalDevice, m_swapChain, &imageCount, m_swapChainImages.data());
+
+    m_swapChainFormat = surfaceFormat.format;
+    m_swapChainExtent = extent;
+
+    m_swapChainImageViews.resize(m_swapChainImages.size());
+    for (size_t i = 0; i < m_swapChainImageViews.size(); ++i)
+    {
+        VkImageViewCreateInfo imageViewInfo {};
+        imageViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        imageViewInfo.image = m_swapChainImages[i];
+        imageViewInfo.format = m_swapChainFormat;
+        imageViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        imageViewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+        imageViewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+        imageViewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+        imageViewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+        imageViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        imageViewInfo.subresourceRange.baseMipLevel = 0;
+        imageViewInfo.subresourceRange.levelCount = 1;
+        imageViewInfo.subresourceRange.baseArrayLayer = 0;
+        imageViewInfo.subresourceRange.layerCount = 1;
+
+        VK_THROW_IF_FAILED(vkCreateImageView(m_logicalDevice, &imageViewInfo, m_allocator, &m_swapChainImageViews[i]),
+            "Failed to create swap chain image view");
+    }
 }
 
 } // namespace pbr

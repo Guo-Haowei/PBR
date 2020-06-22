@@ -32,17 +32,23 @@ private:
     void createSurface();
     void pickPhysicalDevice();
     void createLogicalDevice();
+    void createSwapChain();
 private:
     VkAllocationCallbacks*      m_allocator         = NULL;
     VkInstance                  m_instance          = VK_NULL_HANDLE;
     VkDebugReportCallbackEXT    m_debugHandle       = VK_NULL_HANDLE;
     VkPhysicalDevice            m_physicalDevice    = VK_NULL_HANDLE;
     QueueFamilyIndices          m_queueFamily;
-    VkDevice                    m_device            = VK_NULL_HANDLE;
+    VkDevice                    m_logicalDevice     = VK_NULL_HANDLE;
     VkQueue                     m_graphicsQueue     = VK_NULL_HANDLE;
     VkQueue                     m_presentQueue      = VK_NULL_HANDLE;
     VkSurfaceKHR                m_surface           = VK_NULL_HANDLE;
+    // swap chain
     VkSwapchainKHR              m_swapChain         = VK_NULL_HANDLE;
+    vector<VkImage>             m_swapChainImages;
+    VkFormat                    m_swapChainFormat;
+    VkExtent2D                  m_swapChainExtent;
+    vector<VkImageView>         m_swapChainImageViews;
 };
 
 } // namespace pbr
