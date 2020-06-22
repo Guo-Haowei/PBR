@@ -19,6 +19,7 @@ int main()
     catch(const pbr::Exception& e)
     {
         std::cerr << e << "\n";
+        std::cerr << "\nExitting program with 99..." << std::endl;
         return 99;
     }
 

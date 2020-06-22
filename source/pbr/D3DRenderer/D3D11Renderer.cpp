@@ -93,6 +93,10 @@ void D3D11Renderer::DumpGraphicsCardInfo()
     std::wcout << "Graphics Card:     " << desc.Description << std::endl;
 }
 
+void D3D11Renderer::PrepareGpuResources()
+{
+}
+
 void D3D11Renderer::Resize(const Extent2i& extent)
 {
     cleanupRenderTarget();

@@ -64,8 +64,8 @@ namespace pbr {
             availableLayers.push_back(layer.layerName);
         }
 
-#ifdef VK_VERBOSE
-        std::cout << "[Info] Vulkan: " << availableLayers.size() << " available layers:\n";
+#ifdef PBR_VERBOSE
+        std::cout << "[Log] Vulkan: " << availableLayers.size() << " available layers:\n";
         for (const auto& name : availableLayers)
             std::cout << '\t' << name << '\n';
 #endif

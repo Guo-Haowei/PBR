@@ -43,6 +43,7 @@ void Application::initialize()
     m_renderer.reset(Renderer::CreateRenderer(m_window.get()));
     m_renderer->Initialize();
     m_renderer->DumpGraphicsCardInfo();
+    m_renderer->PrepareGpuResources();
 }
 
 void Application::Mainloop()

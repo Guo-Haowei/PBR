@@ -1,12 +1,16 @@
 ADD_LIBRARY(pbr
     Application.cpp
     Renderer.cpp
+    Utility.cpp
     Window.cpp
     main.cpp
 )
 
 IF (OPENGL_RENDERER)
-    TARGET_SOURCES(pbr PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/GLRenderer/GLRenderer.cpp)
+    TARGET_SOURCES(pbr PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/GLRenderer/GLHelpers.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/GLRenderer/GLRenderer.cpp
+    )
 ENDIF ()
 
 IF (DIRECT3D11_RENDERER)
@@ -33,6 +37,8 @@ IF (NOT ${TARGET_PLATFORM} MATCHES "emscripten")
         ${PROJECT_SOURCE_DIR}/external/glfw/include
     )
 ENDIF ()
+
+TARGET_COMPILE_DEFINITIONS(pbr PUBLIC -DDATA_DIR="${PROJECT_SOURCE_DIR}/data/")
 
 IF (${BUILD_DEBUG})
     TARGET_COMPILE_DEFINITIONS(pbr PUBLIC -DPBR_DEBUG)

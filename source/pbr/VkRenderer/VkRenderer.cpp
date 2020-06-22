@@ -46,6 +46,10 @@ void VkRenderer::DumpGraphicsCardInfo()
     std::cout << "Graphics Card:     " << deviceProperties.deviceName << std::endl;
 }
 
+void VkRenderer::PrepareGpuResources()
+{
+}
+
 void VkRenderer::Render()
 {
     // VkPresentInfoKHR presentInfo {};
@@ -141,20 +145,6 @@ void VkRenderer::pickPhysicalDevice()
 
     // simply choose the first gpu we found
     m_physicalDevice = devices.front();
-// #ifdef VK_VERBOSE
-//     std::cout << "[Info] Vulkan: " << devices.size() << " available physical devices\n";
-// #endif
-//     for (const auto& device : devices)
-//     {
-//         VkPhysicalDeviceProperties deviceProperties;
-//         VkPhysicalDeviceFeatures deviceFeatures;
-//         vkGetPhysicalDeviceProperties(device, &deviceProperties);
-//         vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
-
-// #ifdef VK_VERBOSE
-//         std::cout << "\t" << deviceProperties.deviceName << "\n";
-// #endif
-//     }
 
     // queue family
     uint32_t queueFamilyCount = 0;
@@ -260,7 +250,7 @@ void VkRenderer::createSwapChain()
         {
             swapchainPresentMode = available;
             break;
-        } 
+        }
     }
 
     // swapchain extent
