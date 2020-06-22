@@ -1,7 +1,7 @@
+#include "core/Window.h"
 #include "VkRenderer.h"
 #include "VkDebug.h"
 #include "VkHelpers.h"
-#include "Window.h"
 #include "Utility.h"
 #include <array>
 #include <set>
@@ -103,10 +103,10 @@ void VkRenderer::createVkInstance()
 
     VkInstanceCreateInfo info {};
     info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-    info.enabledExtensionCount = extensions.size();
+    info.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
     info.ppEnabledExtensionNames = extensions.data();
 #ifdef PBR_DEBUG
-    info.enabledLayerCount = g_requestedLayers.size();
+    info.enabledLayerCount = static_cast<uint32_t>(g_requestedLayers.size());
     info.ppEnabledLayerNames = g_requestedLayers.data();
 #endif
     VK_THROW_IF_FAILED(vkCreateInstance(&info, m_allocator, &m_instance), "Failed to create instance");
@@ -193,13 +193,13 @@ void VkRenderer::createLogicalDevice()
     VkPhysicalDeviceFeatures features {};
     VkDeviceCreateInfo deviceInfo {};
     deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    deviceInfo.queueCreateInfoCount = deviceQueueInfos.size();
+    deviceInfo.queueCreateInfoCount = static_cast<uint32_t>(deviceQueueInfos.size());
     deviceInfo.pQueueCreateInfos = deviceQueueInfos.data();
     deviceInfo.pEnabledFeatures = &features;
-    deviceInfo.enabledExtensionCount = deviceExtensions.size();
+    deviceInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
     deviceInfo.ppEnabledExtensionNames = deviceExtensions.data();
 #ifdef PBR_DEBUG
-    deviceInfo.enabledLayerCount = g_requestedLayers.size();
+    deviceInfo.enabledLayerCount = static_cast<uint32_t>(g_requestedLayers.size());
     deviceInfo.ppEnabledLayerNames = g_requestedLayers.data();
 #endif
 
@@ -287,7 +287,7 @@ void VkRenderer::createSwapChain()
     if (queueFamilies[0] != queueFamilies[1])
     {
         info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-        info.queueFamilyIndexCount = queueFamilies.size();
+        info.queueFamilyIndexCount = static_cast<uint32_t>(queueFamilies.size());
         info.pQueueFamilyIndices = queueFamilies.data();
     }
     else
@@ -458,7 +458,7 @@ void VkRenderer::createCommandBuffers()
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.commandPool = m_commandPool;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandBufferCount = m_commandBuffers.size();
+    allocInfo.commandBufferCount = static_cast<uint32_t>(m_commandBuffers.size());
 
     VK_THROW_IF_FAILED(vkAllocateCommandBuffers(m_logicalDevice, &allocInfo, m_commandBuffers.data()),
         "Failed to create command buffers");

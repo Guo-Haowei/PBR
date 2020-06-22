@@ -1,29 +1,29 @@
 ADD_LIBRARY(pbr
-    Application.cpp
-    Renderer.cpp
+    core/Application.cpp
+    core/Renderer.cpp
+    core/Window.cpp
     Utility.cpp
-    Window.cpp
     main.cpp
 )
 
 IF (OPENGL_RENDERER)
     TARGET_SOURCES(pbr PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/GLRenderer/GLHelpers.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/GLRenderer/GLRenderer.cpp)
+        ${CMAKE_CURRENT_SOURCE_DIR}/opengl/GLHelpers.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/opengl/GLRenderer.cpp)
 ENDIF ()
 
 IF (DIRECT3D11_RENDERER)
     TARGET_SOURCES(pbr PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/D3dRenderer/D3d11Helpers.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/D3dRenderer/D3d11Renderer.cpp)
+        ${CMAKE_CURRENT_SOURCE_DIR}/direct3d/D3d11Helpers.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/direct3d/D3d11Renderer.cpp)
 ENDIF ()
 
 IF (VULKAN_RENDERER)
     MESSAGE ("************************************* Vulkan *************************************")
     FIND_PACKAGE(Vulkan REQUIRED FATAL_ERROR)
     TARGET_SOURCES(pbr PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/VkRenderer/VkRenderer.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/VkRenderer/VkHelpers.cpp)
+        ${CMAKE_CURRENT_SOURCE_DIR}/vulkan/VkRenderer.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/vulkan/VkHelpers.cpp)
     TARGET_INCLUDE_DIRECTORIES(pbr PRIVATE ${Vulkan_INCLUDE_DIRS})
     TARGET_LINK_LIBRARIES(pbr PRIVATE ${Vulkan_LIBRARIES})
     MESSAGE (STATUS "Vulkan_INCLUDE_DIRS:           ${Vulkan_INCLUDE_DIRS}")

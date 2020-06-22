@@ -1,6 +1,6 @@
 #include "Application.h"
-#include "Platform.h"
-#include "Config.h"
+#include "base/Platform.h"
+#include "base/Config.h"
 
 namespace pbr {
 
@@ -37,7 +37,7 @@ void Application::Run()
 
 void Application::initialize()
 {
-    std::cout << "************* Debug Info *************\n";
+    cout << "************* Debug Info *************\n";
     m_window.reset(new Window());
     m_window->Initialize(g_windowCreateInfo);
     m_renderer.reset(Renderer::CreateRenderer(m_window.get()));

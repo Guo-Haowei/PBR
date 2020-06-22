@@ -1,12 +1,12 @@
+#include "base/Error.h"
 #include "Renderer.h"
-#include "Error.h"
 #include "Window.h"
-#include "GLRenderer/GLRenderer.h"
+#include "opengl/GLRenderer.h"
 #if TARGET_PLATFORM == PLATFORM_WINDOWS
-#   include "D3dRenderer/D3d11Renderer.h"
+#   include "direct3d/D3d11Renderer.h"
 #endif
 #if TARGET_PLATFORM != PLATFORM_EMSCRIPTEN
-#   include "VkRenderer/VkRenderer.h"
+#   include "vulkan/VkRenderer.h"
 #endif
 
 namespace pbr {

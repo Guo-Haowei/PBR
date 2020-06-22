@@ -1,6 +1,6 @@
 #pragma once
-#include "Definitions.h"
-#include "Platform.h"
+#include "base/Definitions.h"
+#include "base/Platform.h"
 #include <string>
 
 namespace pbr {

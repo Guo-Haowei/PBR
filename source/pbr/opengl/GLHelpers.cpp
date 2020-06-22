@@ -1,6 +1,6 @@
+#include "base/Error.h"
 #include "GLHelpers.h"
 #include "Utility.h"
-#include "Error.h"
 
 namespace pbr {
 

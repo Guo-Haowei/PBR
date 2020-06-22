@@ -1,7 +1,7 @@
+#include "core/Window.h"
 #include "D3d11Renderer.h"
 #include "D3dDebug.h"
 #include "D3d11Helpers.h"
-#include "Window.h"
 #include <iostream>
 
 namespace pbr {

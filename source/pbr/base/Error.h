@@ -1,11 +1,8 @@
 #pragma once
-#include <string>
+#include "Prerequisites.h"
 #include <assert.h>
-#include <ostream>
 
 namespace pbr {
-    using std::string;
-    using std::ostream;
 
     class Exception
     {

@@ -1,6 +1,7 @@
-#include "Application.h"
-#include "Error.h"
-#include <iostream>
+#include "base/Error.h"
+#include "core/Application.h"
+using std::cout;
+using std::endl;
 
 // force NV card selection
 #ifdef _WIN32
@@ -18,8 +19,8 @@ int main()
     }
     catch(const pbr::Exception& e)
     {
-        std::cerr << e << "\n";
-        std::cerr << "\nExitting program with 99..." << std::endl;
+        cout << e << "\n";
+        cout << "\nExitting program with 99..." << endl;
         return 99;
     }
 

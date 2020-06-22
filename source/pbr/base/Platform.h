@@ -33,8 +33,6 @@
 #   define PBR_GL_VERSION_MINOR 1
 #endif
 
-#define PBR_GL_VERSION (PBR_GL_VERSION_MAJOR * 100 + PBR_GL_VERSION_MINOR * 10)
-
 // glfw
 #if TARGET_PLATFORM == PLATFORM_EMSCRIPTEN
 #   include <GLFW/glfw3.h>
@@ -49,11 +47,6 @@
 #   include <GLFW/glfw3.h>
 #   include <GLFW/glfw3native.h>
 #endif
-
-// data
-#ifndef DATA_DIR
-#define DATA_DIR ""
-#endif // !DATA_DIR
 
 #if TARGET_PLATFORM == PLATFORM_EMSCRIPTEN
 #   define GLSL_DIR DATA_DIR "shaders/glsles/"

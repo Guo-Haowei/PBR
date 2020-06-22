@@ -1,8 +1,8 @@
+#include "base/Error.h"
+#include "core/Window.h"
 #include "GLRenderer.h"
 #include "GLPrerequisites.h"
 #include "GLDebugCb.h"
-#include "Error.h"
-#include "Window.h"
 #include "Utility.h"
 using std::cout;
 using std::endl;

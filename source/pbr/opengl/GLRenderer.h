@@ -1,5 +1,5 @@
 #pragma once
-#include "Renderer.h"
+#include "core/Renderer.h"
 #include "GLHelpers.h"
 
 namespace pbr {

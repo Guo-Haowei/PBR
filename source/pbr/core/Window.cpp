@@ -1,5 +1,5 @@
+#include "base/Error.h"
 #include "Window.h"
-#include "Error.h"
 #include "Application.h"
 
 namespace pbr {
@@ -74,8 +74,8 @@ void Window::setWindowSizeFromCreateInfo(const WindowCreateInfo& info)
     if (info.windowScale > 0.0f)
     {
         const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-        m_windowExtent.width = info.windowScale * mode->width;
-        m_windowExtent.height = info.windowScale * mode->height;
+        m_windowExtent.width = static_cast<int>(info.windowScale * mode->width);
+        m_windowExtent.height = static_cast<int>(info.windowScale * mode->height);
     }
     else
 #endif

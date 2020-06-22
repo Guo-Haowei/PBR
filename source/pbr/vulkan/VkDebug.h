@@ -1,7 +1,6 @@
 #pragma once
 #include "VkPrerequisites.h"
-#include "Definitions.h"
-#include "Error.h"
+#include "base/Error.h"
 #include <iostream>
 #include <unordered_map>
 

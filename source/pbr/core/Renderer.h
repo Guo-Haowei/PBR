@@ -1,5 +1,5 @@
 #pragma once
-#include "Definitions.h"
+#include "base/Definitions.h"
 #include "Mesh.h"
 
 namespace pbr {
