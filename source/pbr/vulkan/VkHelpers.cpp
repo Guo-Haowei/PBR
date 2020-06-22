@@ -2,7 +2,7 @@
 #include "VkDebug.h"
 #include "Utility.h"
 
-namespace pbr {
+namespace pbr { namespace vk {
 
 VkShaderModule createShaderModuleFromFile(const char* file, const VkDevice& device, VkAllocationCallbacks* pAlloc)
 {
@@ -18,5 +18,4 @@ VkShaderModule createShaderModuleFromFile(const char* file, const VkDevice& devi
     return module;
 }
 
-} // namespace pbr
-
+} } // namespace pbr::vk

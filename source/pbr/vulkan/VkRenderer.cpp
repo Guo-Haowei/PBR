@@ -373,8 +373,8 @@ void VkRenderer::createSwapChainImageViews()
 void VkRenderer::createGraphicsPipeline()
 {
     // shader
-    VkShaderModule vertexShaderModule = createShaderModuleFromFile(SPIRV_DIR "pbr.vert.spirv", m_logicalDevice, m_allocator);
-    VkShaderModule fragmentShaderModule = createShaderModuleFromFile(SPIRV_DIR "pbr.frag.spirv", m_logicalDevice, m_allocator);
+    VkShaderModule vertexShaderModule = vk::createShaderModuleFromFile(SPIRV_DIR "pbr.vert.spirv", m_logicalDevice, m_allocator);
+    VkShaderModule fragmentShaderModule = vk::createShaderModuleFromFile(SPIRV_DIR "pbr.frag.spirv", m_logicalDevice, m_allocator);
 
     VkPipelineShaderStageCreateInfo vertCreateInfo {};
     vertCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -390,11 +390,51 @@ void VkRenderer::createGraphicsPipeline()
 
     VkPipelineShaderStageCreateInfo shaderStages[] = { vertCreateInfo, fragCreateInfo };
 
+    // input assembly
+    VkPipelineInputAssemblyStateCreateInfo inputAssembly {};
+    inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+    // viewport
+    vk::PipelineViewportState viewport(m_swapChainExtent.width, m_swapChainExtent.height);
+
+    // rasterizer
+    VkPipelineRasterizationStateCreateInfo rasterizer {};
+    rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    rasterizer.depthClampEnable = VK_FALSE;
+    rasterizer.rasterizerDiscardEnable = VK_FALSE;
+    rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterizer.lineWidth = 1.0f;
+    rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+    rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+    rasterizer.depthBiasEnable = VK_FALSE;
+
+    // multisampling
+    VkPipelineMultisampleStateCreateInfo multisampling {};
+    multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    multisampling.sampleShadingEnable = VK_FALSE;
+    multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    multisampling.minSampleShading = 1.0f;
+
+    // color blending
+    VkPipelineColorBlendAttachmentState colorBlendAttachment {};
+    colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT |
+                                          VK_COLOR_COMPONENT_G_BIT |
+                                          VK_COLOR_COMPONENT_B_BIT |
+                                          VK_COLOR_COMPONENT_A_BIT ;
+    colorBlendAttachment.blendEnable = VK_FALSE;
+    VkPipelineColorBlendStateCreateInfo colorBlendInfo {};
+    colorBlendInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    colorBlendInfo.logicOpEnable = VK_FALSE;
+    colorBlendInfo.attachmentCount = 1;
+    colorBlendInfo.pAttachments = &colorBlendAttachment;
+
     // pipeline layout
     VkPipelineLayoutCreateInfo pipelineLayoutInfo {};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 0;
-    pipelineLayoutInfo.pushConstantRangeCount = 0;
+    // pipelineLayoutInfo.setLayoutCount = 0;
+    // pipelineLayoutInfo.pushConstantRangeCount = 0;
 
     VK_THROW_IF_FAILED(vkCreatePipelineLayout(m_logicalDevice, &pipelineLayoutInfo, m_allocator, &m_pipelineLayout),
         "Failed to create pipeline layout");
@@ -404,7 +444,15 @@ void VkRenderer::createGraphicsPipeline()
     // shader stages
     pipelineInfo.stageCount = 2;
     pipelineInfo.pStages = shaderStages;
-    // vertex input layout
+    // vertex input skip for now
+
+    pipelineInfo.pInputAssemblyState = &inputAssembly;
+    pipelineInfo.pViewportState = &viewport.createInfo;
+
+    pipelineInfo.pRasterizationState = &rasterizer;
+    pipelineInfo.pMultisampleState = &multisampling;
+    pipelineInfo.pColorBlendState = &colorBlendInfo;
+
     pipelineInfo.layout = m_pipelineLayout;
     pipelineInfo.renderPass = m_renderPass;
     pipelineInfo.subpass = 0;

@@ -11,8 +11,7 @@
             ],
             "defines": [
                 "DATA_DIR=\"\"",
-                "PBR_DEBUG",
-                "PBR_VERBOSE"
+                "_DEBUG"
             ]
         }
     ],

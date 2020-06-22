@@ -5,7 +5,6 @@ SET(CMAKE_CXX_STANDARD 17)
 
 # options
 OPTION(BUILD_WITH_EMCMAKE "Build with emcmake" OFF)
-OPTION(BUILD_DEBUG "Build debug" ON)
 
 # global variables
 SET (OPENGL_RENDERER TRUE)
@@ -46,11 +45,6 @@ MESSAGE ("************************************* Variables **********************
 MESSAGE ("Platform:")
 MESSAGE (STATUS "Target platform:               ${TARGET_PLATFORM}")
 MESSAGE (STATUS "Compiler:                      ${CMAKE_CXX_COMPILER_ID}")
-IF (BUILD_DEBUG)
-    MESSAGE (STATUS "Build:                         Debug")
-ELSE ()
-    MESSAGE (STATUS "Build:                         Release")
-ENDIF ()
 MESSAGE ("Renderer:")
 MESSAGE (STATUS "OpenGL renderer:               ${OPENGL_RENDERER}")
 MESSAGE (STATUS "Vulkan renderer:               ${VULKAN_RENDERER}")
