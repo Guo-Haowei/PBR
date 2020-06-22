@@ -33,6 +33,13 @@ private:
     void pickPhysicalDevice();
     void createLogicalDevice();
     void createSwapChain();
+    void createSwapChainImageViews();
+    void createPipelineLayout();
+    void createRenderPass();
+    void createGraphicsPipeline();
+    void createSwapChainFramebuffers();
+    void createCommandPool();
+    void createCommandBuffers();
 private:
     VkAllocationCallbacks*      m_allocator         = NULL;
     VkInstance                  m_instance          = VK_NULL_HANDLE;
@@ -49,6 +56,14 @@ private:
     VkFormat                    m_swapChainFormat;
     VkExtent2D                  m_swapChainExtent;
     vector<VkImageView>         m_swapChainImageViews;
+    vector<VkFramebuffer>       m_swapChainFramebuffers;
+    // render pass
+    VkRenderPass                m_renderPass        = VK_NULL_HANDLE;
+    VkPipelineLayout            m_pipelineLayout    = VK_NULL_HANDLE;
+    VkPipeline                  m_graphicsPipeline  = VK_NULL_HANDLE;
+    // command buffer
+    VkCommandPool               m_commandPool       = VK_NULL_HANDLE;
+    vector<VkCommandBuffer>     m_commandBuffers;
 };
 
 } // namespace pbr

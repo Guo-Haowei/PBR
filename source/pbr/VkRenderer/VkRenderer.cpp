@@ -30,6 +30,13 @@ void VkRenderer::Initialize()
     pickPhysicalDevice();
     createLogicalDevice();
     createSwapChain();
+    createSwapChainImageViews();
+    createPipelineLayout();
+    createRenderPass();
+    createGraphicsPipeline();
+    createSwapChainFramebuffers();
+    createCommandPool();
+    createCommandBuffers();
 }
 
 void VkRenderer::DumpGraphicsCardInfo()
@@ -55,6 +62,16 @@ void VkRenderer::Resize(const Extent2i& extent)
 
 void VkRenderer::Finalize()
 {
+    // command pool
+    vkDestroyCommandPool(m_logicalDevice, m_commandPool, m_allocator);
+    // framebuffers
+    for (auto& framebuffer : m_swapChainFramebuffers)
+        vkDestroyFramebuffer(m_logicalDevice, framebuffer, m_allocator);
+    // pipeline
+    vkDestroyPipeline(m_logicalDevice, m_graphicsPipeline, m_allocator);
+    // pipeline layout
+    vkDestroyPipelineLayout(m_logicalDevice, m_pipelineLayout, m_allocator);
+    vkDestroyRenderPass(m_logicalDevice, m_renderPass, m_allocator);
     for (auto& imageView : m_swapChainImageViews)
         vkDestroyImageView(m_logicalDevice, imageView, m_allocator);
     vkDestroySwapchainKHR(m_logicalDevice, m_swapChain, m_allocator);
@@ -243,7 +260,7 @@ void VkRenderer::createSwapChain()
         {
             swapchainPresentMode = available;
             break;
-        }
+        } 
     }
 
     // swapchain extent
@@ -303,7 +320,46 @@ void VkRenderer::createSwapChain()
 
     m_swapChainFormat = surfaceFormat.format;
     m_swapChainExtent = extent;
+}
 
+void VkRenderer::createPipelineLayout()
+{
+}
+
+void VkRenderer::createRenderPass()
+{
+    VkAttachmentDescription colorAttachment {};
+    colorAttachment.format = m_swapChainFormat;
+    colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    VkAttachmentReference colorAttachmentRef {};
+    colorAttachmentRef.attachment = 0;
+    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    VkSubpassDescription subpass {};
+    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.colorAttachmentCount = 1;
+    subpass.pColorAttachments = &colorAttachmentRef;
+
+    VkRenderPassCreateInfo renderPassInfo {};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderPassInfo.attachmentCount = 1;
+    renderPassInfo.pAttachments = &colorAttachment;
+    renderPassInfo.subpassCount = 1;
+    renderPassInfo.pSubpasses = &subpass;
+
+    VK_THROW_IF_FAILED(vkCreateRenderPass(m_logicalDevice, &renderPassInfo, m_allocator, &m_renderPass),
+        "Failed to create render pass");
+}
+
+void VkRenderer::createSwapChainImageViews()
+{
+    // swapchain image views
     m_swapChainImageViews.resize(m_swapChainImages.size());
     for (size_t i = 0; i < m_swapChainImageViews.size(); ++i)
     {
@@ -315,7 +371,7 @@ void VkRenderer::createSwapChain()
         imageViewInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
         imageViewInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
         imageViewInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-        imageViewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+        imageViewInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY; 
         imageViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         imageViewInfo.subresourceRange.baseMipLevel = 0;
         imageViewInfo.subresourceRange.levelCount = 1;
@@ -324,6 +380,108 @@ void VkRenderer::createSwapChain()
 
         VK_THROW_IF_FAILED(vkCreateImageView(m_logicalDevice, &imageViewInfo, m_allocator, &m_swapChainImageViews[i]),
             "Failed to create swap chain image view");
+    }
+}
+
+void VkRenderer::createGraphicsPipeline()
+{
+    // shader
+    VkShaderModule vertexShader = VK_NULL_HANDLE;
+    VkShaderModule fragmentShader = VK_NULL_HANDLE;
+
+    // pipeline layout
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo {};
+    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutInfo.setLayoutCount = 0;
+    pipelineLayoutInfo.pushConstantRangeCount = 0;
+
+    VK_THROW_IF_FAILED(vkCreatePipelineLayout(m_logicalDevice, &pipelineLayoutInfo, m_allocator, &m_pipelineLayout),
+        "Failed to create pipeline layout");
+
+    VkGraphicsPipelineCreateInfo pipelineInfo {};
+    pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    pipelineInfo.layout = m_pipelineLayout;
+    pipelineInfo.renderPass = m_renderPass;
+    pipelineInfo.subpass = 0;
+    pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+
+    VK_THROW_IF_FAILED(vkCreateGraphicsPipelines(m_logicalDevice, VK_NULL_HANDLE, 1, &pipelineInfo, m_allocator, &m_graphicsPipeline),
+        "Failed to create graphics pipeline");
+
+    // destroy shader module
+}
+
+void VkRenderer::createSwapChainFramebuffers()
+{
+    // swapchain framebuffers
+    m_swapChainFramebuffers.resize(m_swapChainImageViews.size());
+    for (uint32_t i = 0; i < m_swapChainFramebuffers.size(); ++i)
+    {
+        VkImageView attachments[] = { m_swapChainImageViews[i] };
+        VkFramebufferCreateInfo framebufferInfo {};
+        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebufferInfo.renderPass = m_renderPass;
+        framebufferInfo.attachmentCount = 1;
+        framebufferInfo.pAttachments = attachments;
+        framebufferInfo.width = m_swapChainExtent.width;
+        framebufferInfo.height = m_swapChainExtent.height;
+        framebufferInfo.layers = 1;
+
+        VK_THROW_IF_FAILED(vkCreateFramebuffer(m_logicalDevice, &framebufferInfo, m_allocator, &m_swapChainFramebuffers[i]),
+            "Failed to create frame buffer " + std::to_string(i));
+    }
+}
+
+void VkRenderer::createCommandPool()
+{
+    VkCommandPoolCreateInfo info {};
+    info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    info.queueFamilyIndex = m_queueFamily.graphicsFamily.value();
+    info.flags = 0;
+
+    VK_THROW_IF_FAILED(vkCreateCommandPool(m_logicalDevice, &info, m_allocator, &m_commandPool),
+        "Failed to create command pool");
+}
+
+void VkRenderer::createCommandBuffers()
+{
+    m_commandBuffers.resize(m_swapChainFramebuffers.size());
+
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.commandPool = m_commandPool;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandBufferCount = m_commandBuffers.size();
+
+    VK_THROW_IF_FAILED(vkAllocateCommandBuffers(m_logicalDevice, &allocInfo, m_commandBuffers.data()),
+        "Failed to create command buffers");
+
+    for (size_t i = 0; i < m_commandBuffers.size(); ++i)
+    {
+        VkCommandBufferBeginInfo beginInfo {};
+        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+        VK_THROW_IF_FAILED(vkBeginCommandBuffer(m_commandBuffers[i], &beginInfo),
+            "Failed to begin recording command buffer");
+
+        VkRenderPassBeginInfo renderPassInfo {};
+        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassInfo.renderPass = m_renderPass;
+        renderPassInfo.framebuffer = m_swapChainFramebuffers[i];
+        renderPassInfo.renderArea.offset = { 0, 0 };
+        renderPassInfo.renderArea.extent = m_swapChainExtent;
+
+        VkClearValue clearColor = { 0.3f, 0.3f, 0.4f, 1.0f };
+        renderPassInfo.clearValueCount = 1;
+        renderPassInfo.pClearValues = &clearColor;
+
+        vkCmdBeginRenderPass(m_commandBuffers[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdBindPipeline(m_commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline);
+        //vkCmdDraw(m_commandBuffers[i], 2, 1, 0, 0);
+        vkCmdEndRenderPass(m_commandBuffers[i]);
+
+        VK_THROW_IF_FAILED(vkEndCommandBuffer(m_commandBuffers[i]),
+            "Failed to record command buffer");
     }
 }
 
