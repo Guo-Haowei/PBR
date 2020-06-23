@@ -66,16 +66,13 @@ void GLRenderer::Render(const Camera& camera)
         m_pbrProgram.setUniform("u_per_frame.projection", camera.ProjectionMatrixGl());
     }
 
-    const array<mat4, 2> transforms = {
-        glm::translate(mat4(1.0f), vec3(-1.0f, 0.0f, 0.0f)),
-        glm::translate(mat4(1.0f), vec3(+1.0f, 0.0f, 0.0f))
-    };
+    glDrawElementsInstanced(GL_TRIANGLES, m_sphere.indexCount, GL_UNSIGNED_INT, 0, 16);
 
-    for (const mat4& m : transforms)
-    {
-        m_pbrProgram.setUniform("u_per_draw.transform", m);
-        glDrawElements(GL_TRIANGLES, m_sphere.indexCount, GL_UNSIGNED_INT, 0);
-    }
+    // for (const mat4& m : transforms)
+    // {
+    //     m_pbrProgram.setUniform("u_per_draw.transform", m);
+    //     glDrawElements(GL_TRIANGLES, m_sphere.indexCount, GL_UNSIGNED_INT, 0);
+    // }
 }
 
 void GLRenderer::Resize(const Extent2i& extent)

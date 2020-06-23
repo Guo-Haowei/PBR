@@ -23,7 +23,12 @@ uniform PerDrawBuffer u_per_draw;
 
 void main()
 {
-    vec4 world_position = u_per_draw.transform * vec4(in_position, 1.0);
+    float scale = 3.0;
+    float x = scale * (float(gl_InstanceID % 4) - 1.5);
+    float y = scale * (float(gl_InstanceID / 4) - 1.5);
+    vec3 offset = vec3(x, y, 0.0);
+    // vec4 world_position = u_per_draw.transform * vec4(in_position, 1.0);
+    vec4 world_position = vec4(in_position + offset, 1.0);
     gl_Position = u_per_frame.projection * u_per_frame.view * world_position;
     pass_position = world_position.xyz;
     pass_normal = in_normal;

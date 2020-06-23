@@ -47,7 +47,7 @@ void Application::initialize()
     m_renderer->PrepareGpuResources();
 
     // initialize camera
-    mat4 transform = glm::translate(mat4(1.0f), vec3(0.0f, 0.0f, 3.0f));
+    mat4 transform = glm::translate(mat4(1.0f), vec3(0.0f, 0.0f, 10.0f));
     m_camera.SetTransformation(transform);
     m_camera.SetAspect(-1.0f); // force update
     m_cameraController.SetCamera(&m_camera);

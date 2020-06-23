@@ -24,10 +24,16 @@ cbuffer PerFrameBuffer : register(b1)
     float4x4 projection;
 };
 
-out_vs vs_main(in_vs input)
+out_vs vs_main(in_vs input, uint id : SV_InstanceID)
 {
+    float scale = 3.0;
+    float x = scale * (float(id % 4) - 1.5);
+    float y = scale * (float(id / 4) - 1.5);
+    float3 offset = float3(x, y, 0.0);
+
     out_vs output;
-    float4 world_position = mul(transform, float4(input.position, 1.0));
+    // float4 world_position = mul(transform, float4(input.position, 1.0));
+    float4 world_position = float4(input.position + offset, 1.0);
     output.position = world_position.xyz;
     world_position = mul(view, world_position);
     world_position = mul(projection, world_position);

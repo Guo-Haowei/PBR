@@ -58,21 +58,17 @@ void D3d11Renderer::Render(const Camera& camera)
     m_deviceContext->IASetVertexBuffers(0, 1, m_sphere.vertexBuffer.GetAddressOf(), &stride, &offset);
     m_deviceContext->IASetIndexBuffer(m_sphere.indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
     // draw
-    const array<mat4, 2> transforms = {
-        glm::translate(mat4(1.0f), vec3(-1.0f, 0.0f, 0.0f)),
-        glm::translate(mat4(1.0f), vec3(+1.0f, 0.0f, 0.0f))
-    };
-
     m_deviceContext->ClearRenderTargetView(m_immediateRenderTarget.Get(), clearColor);
     m_deviceContext->ClearDepthStencilView(m_immediateDepthStencil.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-    for (const mat4& m : transforms)
-    {
-        m_perDrawBuffer.m_cache.transform = m;
-        m_perDrawBuffer.VSSet(m_deviceContext, 0);
-        m_perDrawBuffer.Update(m_deviceContext);
-        m_deviceContext->DrawIndexed(m_sphere.indexCount, 0, 0);
-    }
+    // for (const mat4& m : transforms)
+    // {
+    //     m_perDrawBuffer.m_cache.transform = m;
+    //     m_perDrawBuffer.VSSet(m_deviceContext, 0);
+    //     m_perDrawBuffer.Update(m_deviceContext);
+    //     m_deviceContext->DrawIndexed(m_sphere.indexCount, 0, 0);
+    // }
+    m_deviceContext->DrawIndexedInstanced(m_sphere.indexCount, 16, 0, 0, 0);
     m_swapChain->Present(0, 0); // m_swapChain->Present(1, 0);
     // present
 }
