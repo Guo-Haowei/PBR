@@ -51,8 +51,3 @@
 #define GLSL_DIR DATA_DIR "shaders/glsl/"
 #define HLSL_DIR DATA_DIR "shaders/hlsl/"
 #define SPIRV_DIR DATA_DIR "shaders/spirv/"
-
-#if defined(_DEBUG)
-#   define PBR_DEBUG
-#   define PBR_VERBOSE
-#endif

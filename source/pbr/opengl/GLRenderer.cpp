@@ -115,7 +115,7 @@ void GLRenderer::compileShaders()
 
 void GLRenderer::createSphereBuffers()
 {
-    m_sphere.indexCount = 3 * g_sphere.indices.size();
+    m_sphere.indexCount = static_cast<uint32_t>(3 * g_sphere.indices.size());
     glGenVertexArrays(1, &m_sphere.vao);
     glBindVertexArray(m_sphere.vao);
     glGenBuffers(2, &m_sphere.vbo);

@@ -251,14 +251,14 @@ void D3d11Renderer::compileShaders()
 
 void D3d11Renderer::createSphereBuffers()
 {
-    m_sphere.indexCount = 3 * g_sphere.indices.size();
+    m_sphere.indexCount = static_cast<uint32_t>(3 * g_sphere.indices.size());
 
     {
         // vertex buffer
         D3D11_BUFFER_DESC bufferDesc;
         ZeroMemory(&bufferDesc, sizeof(D3D11_BUFFER_DESC));
         bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-        bufferDesc.ByteWidth = sizeof(Vertex) * g_sphere.vertices.size();
+        bufferDesc.ByteWidth = static_cast<uint32_t>(sizeof(Vertex) * g_sphere.vertices.size());
         bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
         bufferDesc.CPUAccessFlags = 0;
         bufferDesc.MiscFlags = 0;
@@ -274,7 +274,7 @@ void D3d11Renderer::createSphereBuffers()
         D3D11_BUFFER_DESC bufferDesc;
         ZeroMemory(&bufferDesc, sizeof(D3D11_BUFFER_DESC));
         bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-        bufferDesc.ByteWidth = sizeof(uvec3) * g_sphere.indices.size();
+        bufferDesc.ByteWidth = static_cast<uint32_t>(sizeof(uvec3) * g_sphere.indices.size());
         bufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
         bufferDesc.CPUAccessFlags = 0;
         bufferDesc.MiscFlags = 0;

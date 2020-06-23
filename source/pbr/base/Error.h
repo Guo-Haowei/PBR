@@ -2,6 +2,11 @@
 #include "Prerequisites.h"
 #include <assert.h>
 
+#if defined(_DEBUG)
+#   define PBR_DEBUG
+#   define PBR_VERBOSE
+#endif
+
 namespace pbr {
 
     class Exception
