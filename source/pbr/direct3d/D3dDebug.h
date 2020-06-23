@@ -3,7 +3,7 @@
 #include "base/Error.h"
 #include <comdef.h>
 
-namespace pbr {
+namespace pbr { namespace d3d11 {
 
     class D3dException : public Exception
     {
@@ -28,10 +28,10 @@ namespace pbr {
     protected:
         HRESULT m_result;
     };
-} // namespace pbr
+} } // namespace pbr::d3d11
 
 #define D3D_THROW_IF_FAILED(EXP, DESC) \
 { \
     HRESULT _HR = (EXP); \
-    if (_HR != S_OK) throw pbr::D3dException(__LINE__, __FILE__, DESC, _HR); \
+    if (_HR != S_OK) throw pbr::d3d11::D3dException(__LINE__, __FILE__, DESC, _HR); \
 }

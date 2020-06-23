@@ -5,6 +5,6 @@
 #include <d3d11.h>
 #pragma comment(lib, "d3d11.lib")
 
-namespace pbr {
+namespace pbr { namespace d3d11 {
     using Microsoft::WRL::ComPtr;
-} // namespace pbr
+} } // namespace pbr::d3d11

@@ -22,7 +22,7 @@ Renderer* Renderer::CreateRenderer(const Window* pWindow)
     {
         case RenderApi::OPENGL : return new gl::GLRenderer(pWindow);
 #if TARGET_PLATFORM == PLATFORM_WINDOWS
-        case RenderApi::DIRECT3D11: return new D3d11Renderer(pWindow);
+        case RenderApi::DIRECT3D11: return new d3d11::D3d11Renderer(pWindow);
 #endif
 #if TARGET_PLATFORM == PLATFORM_MACOS
         case RenderApi::METAL: return nullptr;

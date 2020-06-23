@@ -1,12 +1,9 @@
 #include "D3d11Helpers.h"
 #include "D3dDebug.h"
-#include <string>
 #include <d3dcompiler.h>
 #pragma comment(lib, "d3dcompiler.lib")
 
-namespace pbr {
-    using std::string;
-    using std::wstring;
+namespace pbr { namespace d3d11 {
 
     void HlslShader::CompileShader(const char* file, LPCSTR entry, LPCSTR target, ComPtr<ID3DBlob>& sourceBlob)
     {
@@ -44,4 +41,4 @@ namespace pbr {
         }
     }
 
-} // namespace pbr
+} } // namespace pbr::d3d11

@@ -1,10 +1,10 @@
 #include "core/Window.h"
+#include "core/Camera.h"
 #include "D3d11Renderer.h"
 #include "D3dDebug.h"
-#include "D3d11Helpers.h"
 #include <iostream>
 
-namespace pbr {
+namespace pbr { namespace d3d11 {
 
 D3d11Renderer::D3d11Renderer(const Window* pWindow) : Renderer(pWindow)
 {
@@ -15,7 +15,7 @@ void D3d11Renderer::Initialize()
     m_hwnd = glfwGetWin32Window(m_pWindow->GetInternalWindow());
     createDevice();
     createSwapchain();
-    createRenderTarget();
+    createRenderTarget(m_pWindow->GetFrameBufferExtent());
 }
 
 void D3d11Renderer::Render(const Camera& camera)
@@ -23,10 +23,15 @@ void D3d11Renderer::Render(const Camera& camera)
     // clear
     static const float clearColor[4] = { 0.4f, 0.3f, 0.3f, 1.0f };
     // set render target
-    m_deviceContext->OMSetRenderTargets(1, m_immediateRenderTarget.GetAddressOf(), NULL);
+    m_deviceContext->OMSetRenderTargets(1, m_immediateRenderTarget.GetAddressOf(), m_immediateDepthStencil.Get());
     // shaders
     m_deviceContext->VSSetShader(m_vert.Get(), NULL, 0);
     m_deviceContext->PSSetShader(m_pixel.Get(), NULL, 0);
+    // set perframe buffers
+    m_perFrameBuffer.m_cache.view = camera.viewMatrix();
+    m_perFrameBuffer.m_cache.projection = convertProjection(camera.projectionMatrix());
+    m_perFrameBuffer.VSSet(m_deviceContext, 1);
+    m_perFrameBuffer.Update(m_deviceContext);
     // set viewport
     const Extent2i& extent = m_pWindow->GetFrameBufferExtent();
     D3D11_VIEWPORT viewport;
@@ -44,6 +49,7 @@ void D3d11Renderer::Render(const Camera& camera)
     m_deviceContext->IASetVertexBuffers(0, 1, m_vertexBuffer.GetAddressOf(), &stride, &offset);
     // draw
     m_deviceContext->ClearRenderTargetView(m_immediateRenderTarget.Get(), clearColor);
+    m_deviceContext->ClearDepthStencilView(m_immediateDepthStencil.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
     m_deviceContext->Draw(3, 0);
     m_swapChain->Present(0, 0); // m_swapChain->Present(1, 0);
     // present
@@ -148,40 +154,75 @@ void D3d11Renderer::PrepareGpuResources()
     D3D_THROW_IF_FAILED(hr, "Failed to create input layout");
 
     // vertex buffer
-    D3D11_BUFFER_DESC bufferDesc;
-    ZeroMemory(&bufferDesc, sizeof(D3D11_BUFFER_DESC));
-    bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-    bufferDesc.ByteWidth = sizeof(g_triangle);
-    bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    bufferDesc.CPUAccessFlags = 0;
-    bufferDesc.MiscFlags = 0;
+    {
+        D3D11_BUFFER_DESC bufferDesc;
+        ZeroMemory(&bufferDesc, sizeof(D3D11_BUFFER_DESC));
+        bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
+        bufferDesc.ByteWidth = sizeof(g_triangle);
+        bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+        bufferDesc.CPUAccessFlags = 0;
+        bufferDesc.MiscFlags = 0;
 
-    D3D11_SUBRESOURCE_DATA srData;
-    ZeroMemory(&srData, sizeof(D3D11_SUBRESOURCE_DATA));
-    srData.pSysMem = g_triangle;
-    D3D_THROW_IF_FAILED(m_device->CreateBuffer(&bufferDesc, &srData, m_vertexBuffer.GetAddressOf()),
-        "Failed to create vertex buffer");
+        D3D11_SUBRESOURCE_DATA srData;
+        ZeroMemory(&srData, sizeof(D3D11_SUBRESOURCE_DATA));
+        srData.pSysMem = g_triangle;
+        D3D_THROW_IF_FAILED(m_device->CreateBuffer(&bufferDesc, &srData, m_vertexBuffer.GetAddressOf()),
+                            "Failed to create vertex buffer");
+    }
+
+    // constant buffer
+    m_perFrameBuffer.Create(m_device);
+
+    // rasterizer
+    {
+        // D3D11_RASTERIZER_DESC desc;
+        // ZeroMemory(&desc, sizeof(desc));
+        // desc.FillMode = D3D11_FILL_SOLID;
+        // desc.CullMode = D3D11_CULL_NONE;
+        // m_device->CreateRasterizerState(&desc, m_rasterizer.GetAddressOf());
+        // m_deviceContext->RSSetState(m_rasterizer.Get());
+    }
 }
 
 void D3d11Renderer::Resize(const Extent2i& extent)
 {
     cleanupRenderTarget();
     m_swapChain->ResizeBuffers(0, extent.width, extent.height, DXGI_FORMAT_UNKNOWN, 0);
-    createRenderTarget();
+    createRenderTarget(extent);
 }
 
-void D3d11Renderer::createRenderTarget()
+void D3d11Renderer::createRenderTarget(const Extent2i& extent)
 {
     ComPtr<ID3D11Texture2D> backbuffer;
     m_swapChain->GetBuffer(0, IID_PPV_ARGS(backbuffer.GetAddressOf()));
     HRESULT hr = m_device->CreateRenderTargetView(backbuffer.Get(), NULL, m_immediateRenderTarget.GetAddressOf());
-    D3D_THROW_IF_FAILED(hr, "Failed to create immediate render target");
+    D3D_THROW_IF_FAILED(hr, "Failed to create immediate render target view");
+
+    D3D11_TEXTURE2D_DESC desc;
+    ZeroMemory(&desc, sizeof(desc));
+    desc.Width = extent.width;
+    desc.Height = extent.height;
+    desc.MipLevels = 1;
+    desc.ArraySize = 1;
+    desc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+    desc.SampleDesc.Count = 1;
+    desc.SampleDesc.Quality = 0;
+    desc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+
+    ComPtr<ID3D11Texture2D> depthBuffer;
+
+    D3D_THROW_IF_FAILED(m_device->CreateTexture2D(&desc, 0, depthBuffer.GetAddressOf()),
+        "Failed to create depth buffer");
+    D3D_THROW_IF_FAILED(m_device->CreateDepthStencilView(depthBuffer.Get(), 0, m_immediateDepthStencil.GetAddressOf()),
+        "Failed to create depth stencil view");
 }
 
 void D3d11Renderer::cleanupRenderTarget()
 {
     if (m_immediateRenderTarget != nullptr)
         m_immediateRenderTarget->Release();
+    if (m_immediateDepthStencil != nullptr)
+        m_immediateDepthStencil->Release();
 }
 
 // shaders
@@ -216,5 +257,4 @@ void D3d11Renderer::compileShaders()
     }
 }
 
-} // namespace pbr
-
+} } // namespace pbr::d3d11

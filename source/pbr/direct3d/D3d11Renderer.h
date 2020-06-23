@@ -1,8 +1,9 @@
 #pragma once
 #include "core/Renderer.h"
 #include "D3dPrerequisites.h"
+#include "D3d11Helpers.h"
 
-namespace pbr {
+namespace pbr { namespace d3d11 {
 
 class D3d11Renderer : public Renderer
 {
@@ -17,7 +18,7 @@ public:
 private:
     void createDevice();
     void createSwapchain();
-    void createRenderTarget();
+    void createRenderTarget(const Extent2i& extent);
     void cleanupRenderTarget();
     void compileShaders();
 private:
@@ -31,6 +32,7 @@ private:
     // TODO: refactor
     // render target
     ComPtr<ID3D11RenderTargetView>  m_immediateRenderTarget;
+    ComPtr<ID3D11DepthStencilView>  m_immediateDepthStencil;
     // shaders
     ComPtr<ID3D11VertexShader>      m_vert;
     ComPtr<ID3D11PixelShader>       m_pixel;
@@ -38,6 +40,11 @@ private:
     // input
     ComPtr<ID3D11InputLayout>       m_inputLayout;
     ComPtr<ID3D11Buffer>            m_vertexBuffer;
+    ComPtr<ID3D11Buffer>            m_constantBuffer;
+    // buffers
+    PerFrameBuffer                  m_perFrameBuffer;
+    // rasterizer
+    ComPtr<ID3D11RasterizerState>   m_rasterizer;
 };
 
-} // namespace pbr
+} } // namespace pbr::d3d11

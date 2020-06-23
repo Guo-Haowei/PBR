@@ -8,6 +8,7 @@
 
 namespace pbr {
     using std::string;
+    using std::wstring;
     using std::vector;
     using std::unique_ptr;
     using std::shared_ptr;
