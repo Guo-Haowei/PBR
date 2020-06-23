@@ -13,11 +13,17 @@ struct PerFrameBuffer
     mat4 projection;
 };
 
+struct PerDrawBuffer
+{
+    mat4 transform;
+};
+
 uniform PerFrameBuffer u_per_frame;
+uniform PerDrawBuffer u_per_draw;
 
 void main()
 {
-    vec4 world_position = vec4(in_position, 1.0);
+    vec4 world_position = u_per_draw.transform * vec4(in_position, 1.0);
     gl_Position = u_per_frame.projection * u_per_frame.view * world_position;
     pass_position = world_position.xyz;
     pass_normal = in_normal;

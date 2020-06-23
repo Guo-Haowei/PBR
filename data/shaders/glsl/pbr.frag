@@ -5,7 +5,7 @@ in vec2 pass_uv;
 
 layout (location = 0) out vec4 out_color;
 
-const vec3 light_position = vec3(0.0, 10.0, 10.0);
+const vec3 light_position = vec3(0.0, 10.0, -10.0);
 
 void main()
 {

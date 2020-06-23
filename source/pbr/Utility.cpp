@@ -41,4 +41,13 @@ vector<char> readBinaryFile(const string& path)
     return readBinaryFile(path.c_str());
 }
 
+bool IsNaN(const mat4& m)
+{
+    const float* p = &m[0].x;
+    for (int i = 0; i < 16; ++i)
+        if (glm::isnan(p[i]))
+            return true;
+    return false;
+}
+
 } } // namespace pbr::utility

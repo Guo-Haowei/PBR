@@ -11,7 +11,8 @@ public:
     void Initialize(const WindowCreateInfo& info);
     void Finalize();
     bool ShouldClose() const;
-    void PollEvents();
+    void PollEvents() const;
+    void PostUpdate();
     void SwapBuffers() const;
     float GetAspectRatio() const;
     inline RenderApi GetRenderApi() const { return m_renderApi; }

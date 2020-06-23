@@ -16,10 +16,15 @@ static const char* pbr_vert_c_str =
 	"    mat4 view;\n"\
 	"    mat4 projection;\n"\
 	"};\n"\
+	"struct PerDrawBuffer\n"\
+	"{\n"\
+	"    mat4 transform;\n"\
+	"};\n"\
 	"uniform PerFrameBuffer u_per_frame;\n"\
+	"uniform PerDrawBuffer u_per_draw;\n"\
 	"void main()\n"\
 	"{\n"\
-	"    vec4 world_position = vec4(in_position, 1.0);\n"\
+	"    vec4 world_position = u_per_draw.transform * vec4(in_position, 1.0);\n"\
 	"    gl_Position = u_per_frame.projection * u_per_frame.view * world_position;\n"\
 	"    pass_position = world_position.xyz;\n"\
 	"    pass_normal = in_normal;\n"\
@@ -35,7 +40,7 @@ static const char* pbr_frag_c_str =
 	"in vec3 pass_normal;\n"\
 	"in vec2 pass_uv;\n"\
 	"layout (location = 0) out vec4 out_color;\n"\
-	"const vec3 light_position = vec3(0.0, 10.0, 10.0);\n"\
+	"const vec3 light_position = vec3(0.0, 10.0, -10.0);\n"\
 	"void main()\n"\
 	"{\n"\
 	"    vec3 N = normalize(pass_normal);\n"\

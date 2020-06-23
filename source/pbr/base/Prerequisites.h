@@ -8,6 +8,14 @@
 #include <iostream>
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+#ifdef min
+#   undef min
+#endif // min
+#ifdef max
+#   undef max
+#endif // max
 
 namespace pbr {
     using std::array;

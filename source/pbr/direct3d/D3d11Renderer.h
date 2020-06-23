@@ -43,10 +43,12 @@ private:
     ComPtr<ID3D11Buffer>            m_constantBuffer;
     // buffers
     PerFrameBuffer                  m_perFrameBuffer;
+    PerDrawBuffer                   m_perDrawBuffer;
     // rasterizer
     ComPtr<ID3D11RasterizerState>   m_rasterizer;
-
     PerDrawData                     m_sphere;
+    // reverse depth
+    ComPtr<ID3D11DepthStencilState> m_depthStencilState;
 };
 
 } } // namespace pbr::d3d11

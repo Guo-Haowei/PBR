@@ -60,6 +60,7 @@ void Application::Mainloop()
     m_cameraController.Update(m_window.get());
     m_renderer->Render(m_camera);
     m_window->SwapBuffers();
+    m_window->PostUpdate();
 }
 
 void Application::finalize()

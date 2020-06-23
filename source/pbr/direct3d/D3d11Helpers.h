@@ -10,6 +10,11 @@ struct PerFrameCache
     mat4 projection;
 };
 
+struct PerDrawCache
+{
+    mat4 transform;
+};
+
 struct PerDrawData
 {
     ComPtr<ID3D11Buffer> vertexBuffer;
@@ -19,11 +24,9 @@ struct PerDrawData
 
 static mat4& convertProjection(mat4& projection)
 {
-    projection = mat4( { 1, 0, 0, 0 }, { 0, 1, 0, 0 }, { 0, 0, 1, 0 }, { 0, 0, 0.5, 1} ) *
-                 mat4( { 1, 0, 0, 0 }, { 0, 1, 0, 0 }, { 0, 0, -0.5, 0 }, { 0, 0, 0, 1} ) *
-                 projection;
-    // projection = mat4( { 1, 0, 0, 0 }, { 0, 1, 0, 0 }, { 0, 0, 1, 0 }, { 0, 0, 0, 1} ) *
-    //              mat4( { 1, 0, 0, 0 }, { 0, 1, 0, 0 }, { 0, 0, 1, 0 }, { 0, 0, 0, 1} );
+    // projection = mat4( { 1, 0, 0, 0 }, { 0, 1, 0, 0 }, { 0, 0, 1, 0 }, { 0, 0, 0.5, 1} ) *
+    //              mat4( { 1, 0, 0, 0 }, { 0, 1, 0, 0 }, { 0, 0, 0.5, 0 }, { 0, 0, 0, 1} ) *
+    //              projection;
     return projection;
 }
 
@@ -72,6 +75,7 @@ private:
 };
 
 typedef ConstantBuffer<PerFrameCache> PerFrameBuffer;
+typedef ConstantBuffer<PerDrawCache> PerDrawBuffer;
 
 class HlslShader
 {

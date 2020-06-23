@@ -63,9 +63,19 @@ void GLRenderer::Render(const Camera& camera)
     if (camera.IsDirty())
     {
         m_pbrProgram.setUniform("u_per_frame.view", camera.ViewMatrix());
-        m_pbrProgram.setUniform("u_per_frame.projection", camera.ProjectionMatrix());
+        m_pbrProgram.setUniform("u_per_frame.projection", camera.ProjectionMatrixGl());
     }
-    glDrawElements(GL_TRIANGLES, m_sphere.indexCount, GL_UNSIGNED_INT, 0);
+
+    const array<mat4, 2> transforms = {
+        glm::translate(mat4(1.0f), vec3(-1.0f, 0.0f, 0.0f)),
+        glm::translate(mat4(1.0f), vec3(+1.0f, 0.0f, 0.0f))
+    };
+
+    for (const mat4& m : transforms)
+    {
+        m_pbrProgram.setUniform("u_per_draw.transform", m);
+        glDrawElements(GL_TRIANGLES, m_sphere.indexCount, GL_UNSIGNED_INT, 0);
+    }
 }
 
 void GLRenderer::Resize(const Extent2i& extent)

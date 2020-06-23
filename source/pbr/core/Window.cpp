@@ -66,11 +66,15 @@ bool Window::ShouldClose() const
     return glfwWindowShouldClose(m_pWindow);
 }
 
-void Window::PollEvents()
+void Window::PollEvents() const
+{
+    glfwPollEvents();
+}
+
+void Window::PostUpdate()
 {
     m_scroll = 0;
     m_lastFrameCursorPos = m_thisFrameCursorPos;
-    glfwPollEvents();
 }
 
 void Window::SwapBuffers() const

@@ -15,7 +15,7 @@ struct out_vs
 
 cbuffer PerObjectBuffer : register(b0)
 {
-    float4x4 model;
+    float4x4 transform;
 };
 
 cbuffer PerFrameBuffer : register(b1)
@@ -27,11 +27,11 @@ cbuffer PerFrameBuffer : register(b1)
 out_vs vs_main(in_vs input)
 {
     out_vs output;
-    float4 world_position = float4(input.position, 1.0);
+    float4 world_position = mul(transform, float4(input.position, 1.0));
+    output.position = world_position.xyz;
     world_position = mul(view, world_position);
     world_position = mul(projection, world_position);
     output.sv_position = world_position;
-    output.position = world_position.xyz;
     output.uv = input.uv;
     output.normal = input.normal;
     return output;
@@ -39,7 +39,7 @@ out_vs vs_main(in_vs input)
 
 float4 ps_main(out_vs input) : SV_TARGET
 {
-    const float3 light_position = float3(0.0, 10.0, 10.0);
+    const float3 light_position = float3(0.0, 10.0, -10.0);
     float3 N = normalize(input.normal);
     float3 L = normalize(light_position - input.position);
     float d = max(dot(N, L), 0.0);
