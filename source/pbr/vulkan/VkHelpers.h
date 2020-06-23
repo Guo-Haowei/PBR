@@ -3,7 +3,13 @@
 
 namespace pbr { namespace vk {
 
-extern VkShaderModule createShaderModuleFromFile(const char* file, const VkDevice& device, VkAllocationCallbacks* pAlloc);
+struct QueueFamilyIndices
+{
+    optional<uint32_t> graphicsFamily;
+    optional<uint32_t> presentFamily;
+
+    bool has_value() { return graphicsFamily.has_value() && presentFamily.has_value(); }
+};
 
 struct PipelineViewportState
 {
@@ -39,5 +45,7 @@ struct PipelineViewportState
         createInfo.pScissors = &scissor;
     }
 };
+
+extern VkShaderModule CreateShaderModuleFromFile(const VkDevice& device, const char* file);
 
 } } // namespace pbr::vk

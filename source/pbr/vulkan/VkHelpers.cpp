@@ -4,7 +4,7 @@
 
 namespace pbr { namespace vk {
 
-VkShaderModule createShaderModuleFromFile(const char* file, const VkDevice& device, VkAllocationCallbacks* pAlloc)
+VkShaderModule CreateShaderModuleFromFile(const VkDevice& device, const char* file)
 {
     auto byteCode = utility::readBinaryFile(file);
     VkShaderModuleCreateInfo info {};
@@ -12,7 +12,7 @@ VkShaderModule createShaderModuleFromFile(const char* file, const VkDevice& devi
     info.codeSize = byteCode.size();
     info.pCode = reinterpret_cast<const uint32_t*>(byteCode.data());
     VkShaderModule module {};
-    VK_THROW_IF_FAILED(vkCreateShaderModule(device, &info, pAlloc, &module),
+    VK_THROW_IF_FAILED(vkCreateShaderModule(device, &info, nullptr, &module),
         "Failed to create shader module");
 
     return module;

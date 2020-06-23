@@ -28,7 +28,7 @@ Renderer* Renderer::CreateRenderer(const Window* pWindow)
         case RenderApi::METAL: return nullptr;
 #endif
 #if TARGET_PLATFORM != PLATFORM_EMSCRIPTEN
-        case RenderApi::VULKAN: return new VkRenderer(pWindow);
+        case RenderApi::VULKAN: return new vk::VkRenderer(pWindow);
 #endif
         default: assert(0);
     }

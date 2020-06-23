@@ -6,15 +6,15 @@
 
 #define VK_VERBOSE 1
 
-#define VK_THROW(DESC, VKRESULT) throw pbr::VkException(__LINE__, __FILE__, DESC, VKRESULT)
+#define VK_THROW(DESC, VKRESULT) throw pbr::vk::VkException(__LINE__, __FILE__, DESC, VKRESULT)
 
 #define VK_THROW_IF_FAILED(EXP, DESC) \
 { \
     VkResult _VR = (EXP); \
-    if (_VR != VK_SUCCESS) throw pbr::VkException(__LINE__, __FILE__, DESC, _VR); \
+    if (_VR != VK_SUCCESS) throw pbr::vk::VkException(__LINE__, __FILE__, DESC, _VR); \
 }
 
-namespace pbr {
+namespace pbr { namespace vk {
 
     static const string& VkResultToString(VkResult result);
 
@@ -137,4 +137,4 @@ namespace pbr {
         return found == sTable.end() ? sUnknown : found->second;
     }
 
-} // namespace pbr
+} } // namespace pbr::vk

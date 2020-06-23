@@ -1,17 +1,21 @@
 #pragma once
 #include <array>
+#include <memory>
+#include <optional>
+#include <set>
 #include <string>
 #include <vector>
-#include <memory>
 #include <iostream>
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 
 namespace pbr {
-    using std::string;
-    using std::wstring;
     using std::array;
     using std::vector;
+    using std::set;
+    using std::string;
+    using std::wstring;
+    using std::optional;
     using std::unique_ptr;
     using std::shared_ptr;
     using std::ostream;

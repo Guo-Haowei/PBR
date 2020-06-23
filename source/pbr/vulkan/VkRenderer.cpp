@@ -1,17 +1,9 @@
 #include "core/Window.h"
 #include "VkRenderer.h"
 #include "VkDebug.h"
-#include "VkHelpers.h"
 #include "Utility.h"
-#include <array>
-#include <set>
 
-namespace pbr {
-    using std::set;
-    using std::array;
-} // namespace pbr
-
-namespace pbr {
+namespace pbr { namespace vk {
 
 const vector<const char*> g_requestedLayers = {
 #if TARGET_PLATFORM == PLATFORM_WINDOWS
@@ -38,6 +30,7 @@ void VkRenderer::Initialize()
     createSwapChainFramebuffers();
     createCommandPool();
     createCommandBuffers();
+    createSemaphores();
 }
 
 void VkRenderer::DumpGraphicsCardInfo()
@@ -53,11 +46,36 @@ void VkRenderer::PrepareGpuResources()
 
 void VkRenderer::Render(const Camera& camera)
 {
-    // VkPresentInfoKHR presentInfo {};
-    // presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-    // presentInfo.swapchainCount = 1;
-    // presentInfo.pSwapchains = &m_swapChain;
-    // vkQueuePresentKHR(m_presentQueue, &presentInfo);
+    uint32_t imageIndex;
+    vkAcquireNextImageKHR(m_logicalDevice, m_swapChain, UINT64_MAX, m_imageAvailableMutex, VK_NULL_HANDLE, &imageIndex);
+    VkSubmitInfo submitInfo {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+    VkSemaphore waitSemaphores[] = { m_imageAvailableMutex };
+    VkPipelineStageFlags waitStageMasks[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+    submitInfo.waitSemaphoreCount = 1;
+    submitInfo.pWaitSemaphores = waitSemaphores;
+    submitInfo.pWaitDstStageMask = waitStageMasks;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &m_commandBuffers[imageIndex];
+
+    VkSemaphore signalSemaphores[] = { m_renderFinishedMutex };
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores = signalSemaphores;
+
+    VK_THROW_IF_FAILED(vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE),
+        "Failed to submit draw command buffer");
+
+    VkPresentInfoKHR presentInfo {};
+    presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    presentInfo.waitSemaphoreCount = 1;
+    presentInfo.pWaitSemaphores = signalSemaphores;
+    presentInfo.swapchainCount = 1;
+    presentInfo.pSwapchains = &m_swapChain;
+    presentInfo.pImageIndices = &imageIndex;
+    presentInfo.pResults = nullptr;
+
+    vkQueuePresentKHR(m_presentQueue, &presentInfo);
 }
 
 void VkRenderer::Resize(const Extent2i& extent)
@@ -68,27 +86,29 @@ void VkRenderer::Resize(const Extent2i& extent)
 void VkRenderer::Finalize()
 {
     // command pool
-    vkDestroyCommandPool(m_logicalDevice, m_commandPool, m_allocator);
+    vkDestroySemaphore(m_logicalDevice, m_renderFinishedMutex, nullptr);
+    vkDestroySemaphore(m_logicalDevice, m_imageAvailableMutex, nullptr);
+    vkDestroyCommandPool(m_logicalDevice, m_commandPool, nullptr);
     // framebuffers
     for (auto& framebuffer : m_swapChainFramebuffers)
-        vkDestroyFramebuffer(m_logicalDevice, framebuffer, m_allocator);
+        vkDestroyFramebuffer(m_logicalDevice, framebuffer, nullptr);
     // pipeline
-    vkDestroyPipeline(m_logicalDevice, m_graphicsPipeline, m_allocator);
+    vkDestroyPipeline(m_logicalDevice, m_graphicsPipeline, nullptr);
     // pipeline layout
-    vkDestroyPipelineLayout(m_logicalDevice, m_pipelineLayout, m_allocator);
-    vkDestroyRenderPass(m_logicalDevice, m_renderPass, m_allocator);
+    vkDestroyPipelineLayout(m_logicalDevice, m_pipelineLayout, nullptr);
+    vkDestroyRenderPass(m_logicalDevice, m_renderPass, nullptr);
     for (auto& imageView : m_swapChainImageViews)
-        vkDestroyImageView(m_logicalDevice, imageView, m_allocator);
-    vkDestroySwapchainKHR(m_logicalDevice, m_swapChain, m_allocator);
-    vkDestroyDevice(m_logicalDevice, m_allocator);
+        vkDestroyImageView(m_logicalDevice, imageView, nullptr);
+    vkDestroySwapchainKHR(m_logicalDevice, m_swapChain, nullptr);
+    vkDestroyDevice(m_logicalDevice, nullptr);
 #ifdef PBR_DEBUG
     auto vkDestroyDebugReportCallbackEXT =
         (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(m_instance, "vkDestroyDebugReportCallbackEXT");
     assert(vkDestroyDebugReportCallbackEXT != NULL);
-    vkDestroyDebugReportCallbackEXT(m_instance, m_debugHandle, m_allocator);
+    vkDestroyDebugReportCallbackEXT(m_instance, m_debugHandle, nullptr);
 #endif
-    vkDestroySurfaceKHR(m_instance, m_surface, m_allocator);
-    vkDestroyInstance(m_instance, m_allocator);
+    vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
+    vkDestroyInstance(m_instance, nullptr);
 }
 
 void VkRenderer::createVkInstance()
@@ -109,7 +129,7 @@ void VkRenderer::createVkInstance()
     info.enabledLayerCount = static_cast<uint32_t>(g_requestedLayers.size());
     info.ppEnabledLayerNames = g_requestedLayers.data();
 #endif
-    VK_THROW_IF_FAILED(vkCreateInstance(&info, m_allocator, &m_instance), "Failed to create instance");
+    VK_THROW_IF_FAILED(vkCreateInstance(&info, nullptr, &m_instance), "Failed to create instance");
 }
 
 void VkRenderer::setDebugCallback()
@@ -124,14 +144,14 @@ void VkRenderer::setDebugCallback()
     info.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
     info.pfnCallback = DebugReport;
     info.pUserData = NULL;
-    VK_THROW_IF_FAILED(vkCreateDebugReportCallbackEXT(m_instance, &info, m_allocator, &m_debugHandle),
+    VK_THROW_IF_FAILED(vkCreateDebugReportCallbackEXT(m_instance, &info, nullptr, &m_debugHandle),
         "Failed to find creaet debug report callback");
 #endif
 }
 
 void VkRenderer::createSurface()
 {
-    VK_THROW_IF_FAILED(glfwCreateWindowSurface(m_instance, m_pWindow->GetInternalWindow(), m_allocator, &m_surface),
+    VK_THROW_IF_FAILED(glfwCreateWindowSurface(m_instance, m_pWindow->GetInternalWindow(), nullptr, &m_surface),
         "Failed to create window surface");
 }
 
@@ -203,7 +223,7 @@ void VkRenderer::createLogicalDevice()
     deviceInfo.ppEnabledLayerNames = g_requestedLayers.data();
 #endif
 
-    VK_THROW_IF_FAILED(vkCreateDevice(m_physicalDevice, &deviceInfo, m_allocator, &m_logicalDevice),
+    VK_THROW_IF_FAILED(vkCreateDevice(m_physicalDevice, &deviceInfo, nullptr, &m_logicalDevice),
         "Failed to create logical device");
 
     vkGetDeviceQueue(m_logicalDevice, m_queueFamily.graphicsFamily.value(), 0, &m_graphicsQueue);
@@ -302,7 +322,7 @@ void VkRenderer::createSwapChain()
     info.clipped = VK_TRUE;
     info.oldSwapchain = VK_NULL_HANDLE;
 
-    VK_THROW_IF_FAILED(vkCreateSwapchainKHR(m_logicalDevice, &info, m_allocator, &m_swapChain),
+    VK_THROW_IF_FAILED(vkCreateSwapchainKHR(m_logicalDevice, &info, nullptr, &m_swapChain),
         "Failed to create swap chain");
 
     vkGetSwapchainImagesKHR(m_logicalDevice, m_swapChain, &imageCount, nullptr);
@@ -328,10 +348,19 @@ void VkRenderer::createRenderPass()
     VkAttachmentReference colorAttachmentRef {};
     colorAttachmentRef.attachment = 0;
     colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
     VkSubpassDescription subpass {};
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpass.colorAttachmentCount = 1;
     subpass.pColorAttachments = &colorAttachmentRef;
+
+    VkSubpassDependency dependency {};
+    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependency.dstSubpass = 0;
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.srcAccessMask = 0;
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
     VkRenderPassCreateInfo renderPassInfo {};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -339,8 +368,10 @@ void VkRenderer::createRenderPass()
     renderPassInfo.pAttachments = &colorAttachment;
     renderPassInfo.subpassCount = 1;
     renderPassInfo.pSubpasses = &subpass;
+    renderPassInfo.dependencyCount = 1;
+    renderPassInfo.pDependencies = &dependency;
 
-    VK_THROW_IF_FAILED(vkCreateRenderPass(m_logicalDevice, &renderPassInfo, m_allocator, &m_renderPass),
+    VK_THROW_IF_FAILED(vkCreateRenderPass(m_logicalDevice, &renderPassInfo, nullptr, &m_renderPass),
         "Failed to create render pass");
 }
 
@@ -365,7 +396,7 @@ void VkRenderer::createSwapChainImageViews()
         imageViewInfo.subresourceRange.baseArrayLayer = 0;
         imageViewInfo.subresourceRange.layerCount = 1;
 
-        VK_THROW_IF_FAILED(vkCreateImageView(m_logicalDevice, &imageViewInfo, m_allocator, &m_swapChainImageViews[i]),
+        VK_THROW_IF_FAILED(vkCreateImageView(m_logicalDevice, &imageViewInfo, nullptr, &m_swapChainImageViews[i]),
             "Failed to create swap chain image view");
     }
 }
@@ -373,8 +404,8 @@ void VkRenderer::createSwapChainImageViews()
 void VkRenderer::createGraphicsPipeline()
 {
     // shader
-    VkShaderModule vertexShaderModule = vk::createShaderModuleFromFile(SPIRV_DIR "pbr.vert.spirv", m_logicalDevice, m_allocator);
-    VkShaderModule fragmentShaderModule = vk::createShaderModuleFromFile(SPIRV_DIR "pbr.frag.spirv", m_logicalDevice, m_allocator);
+    VkShaderModule vertexShaderModule = CreateShaderModuleFromFile(m_logicalDevice, SPIRV_DIR "pbr.vert.spirv");
+    VkShaderModule fragmentShaderModule = CreateShaderModuleFromFile(m_logicalDevice, SPIRV_DIR "pbr.frag.spirv");
 
     VkPipelineShaderStageCreateInfo vertCreateInfo {};
     vertCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -436,7 +467,7 @@ void VkRenderer::createGraphicsPipeline()
     // pipelineLayoutInfo.setLayoutCount = 0;
     // pipelineLayoutInfo.pushConstantRangeCount = 0;
 
-    VK_THROW_IF_FAILED(vkCreatePipelineLayout(m_logicalDevice, &pipelineLayoutInfo, m_allocator, &m_pipelineLayout),
+    VK_THROW_IF_FAILED(vkCreatePipelineLayout(m_logicalDevice, &pipelineLayoutInfo, nullptr, &m_pipelineLayout),
         "Failed to create pipeline layout");
 
     VkGraphicsPipelineCreateInfo pipelineInfo {};
@@ -458,12 +489,12 @@ void VkRenderer::createGraphicsPipeline()
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-    VK_THROW_IF_FAILED(vkCreateGraphicsPipelines(m_logicalDevice, VK_NULL_HANDLE, 1, &pipelineInfo, m_allocator, &m_graphicsPipeline),
+    VK_THROW_IF_FAILED(vkCreateGraphicsPipelines(m_logicalDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_graphicsPipeline),
         "Failed to create graphics pipeline");
 
     // destroy shader module
-    vkDestroyShaderModule(m_logicalDevice, vertexShaderModule, m_allocator);
-    vkDestroyShaderModule(m_logicalDevice, fragmentShaderModule, m_allocator);
+    vkDestroyShaderModule(m_logicalDevice, vertexShaderModule, nullptr);
+    vkDestroyShaderModule(m_logicalDevice, fragmentShaderModule, nullptr);
 }
 
 void VkRenderer::createSwapChainFramebuffers()
@@ -482,7 +513,7 @@ void VkRenderer::createSwapChainFramebuffers()
         framebufferInfo.height = m_swapChainExtent.height;
         framebufferInfo.layers = 1;
 
-        VK_THROW_IF_FAILED(vkCreateFramebuffer(m_logicalDevice, &framebufferInfo, m_allocator, &m_swapChainFramebuffers[i]),
+        VK_THROW_IF_FAILED(vkCreateFramebuffer(m_logicalDevice, &framebufferInfo, nullptr, &m_swapChainFramebuffers[i]),
             "Failed to create frame buffer " + std::to_string(i));
     }
 }
@@ -494,7 +525,7 @@ void VkRenderer::createCommandPool()
     info.queueFamilyIndex = m_queueFamily.graphicsFamily.value();
     info.flags = 0;
 
-    VK_THROW_IF_FAILED(vkCreateCommandPool(m_logicalDevice, &info, m_allocator, &m_commandPool),
+    VK_THROW_IF_FAILED(vkCreateCommandPool(m_logicalDevice, &info, nullptr, &m_commandPool),
         "Failed to create command pool");
 }
 
@@ -540,4 +571,16 @@ void VkRenderer::createCommandBuffers()
     }
 }
 
-} // namespace pbr
+void VkRenderer::createSemaphores()
+{
+    VkSemaphoreCreateInfo info {};
+    info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+    VK_THROW_IF_FAILED(vkCreateSemaphore(m_logicalDevice, &info, nullptr, &m_imageAvailableMutex),
+        "Failed to create image semaphore");
+
+    VK_THROW_IF_FAILED(vkCreateSemaphore(m_logicalDevice, &info, nullptr, &m_renderFinishedMutex),
+        "Failed to create image semaphore");
+}
+
+} } // namespace pbr::vk
