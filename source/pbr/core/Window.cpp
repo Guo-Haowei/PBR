@@ -39,11 +39,20 @@ void Window::Initialize(const WindowCreateInfo& info)
         Application::GetSingleton().GetRenderer()->Resize(extent);
     });
 
+    glfwSetMouseButtonCallback(m_pWindow, Window::mouseButtonCallback);
+    glfwSetScrollCallback(m_pWindow, Window::mouseScrollCallback);
+    glfwSetCursorPosCallback(m_pWindow, Window::mouseCursorCallback);
+
     if (m_renderApi == RenderApi::OPENGL)
         glfwMakeContextCurrent(m_pWindow);
 
     glfwGetWindowSize(m_pWindow, &m_windowExtent.width, &m_windowExtent.height);
     glfwGetFramebufferSize(m_pWindow, &m_framebufferExtent.width, &m_framebufferExtent.height);
+
+    // set cursor position
+    double x, y;
+    glfwGetCursorPos(m_pWindow, &x, &y);
+    m_thisFrameCursorPos = m_lastFrameCursorPos = vec2(x, y);
 }
 
 void Window::Finalize()
@@ -57,8 +66,10 @@ bool Window::ShouldClose() const
     return glfwWindowShouldClose(m_pWindow);
 }
 
-void Window::PollEvents() const
+void Window::PollEvents()
 {
+    m_scroll = 0;
+    m_lastFrameCursorPos = m_thisFrameCursorPos;
     glfwPollEvents();
 }
 
@@ -118,6 +129,27 @@ void Window::setWindowHintFromCreateInfo(const WindowCreateInfo& info)
     }
 
     m_windowTitle.append(" (").append(RenderApiToString(info.renderApi)).append(")");
+}
+
+void Window::mouseButtonCallback(GLFWwindow* glfwWindow, int button, int action, int mode)
+{
+    Window* window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(glfwWindow));
+    if (button > window->m_buttons.size())
+        return;
+
+    window->m_buttons[button] = action;
+}
+
+void Window::mouseScrollCallback(GLFWwindow* glfwWindow, double x, double y)
+{
+    Window* window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(glfwWindow));
+    window->m_scroll = y;
+}
+
+void Window::mouseCursorCallback(GLFWwindow* glfwWindow, double x, double y)
+{
+    Window* window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(glfwWindow));
+    window->m_thisFrameCursorPos = vec2(x, y);
 }
 
 } // namespace pbr

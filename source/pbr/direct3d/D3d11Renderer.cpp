@@ -18,6 +18,11 @@ void D3d11Renderer::Initialize()
     createRenderTarget(m_pWindow->GetFrameBufferExtent());
 }
 
+void D3d11Renderer::Finalize()
+{
+
+}
+
 void D3d11Renderer::Render(const Camera& camera)
 {
     // clear
@@ -28,10 +33,13 @@ void D3d11Renderer::Render(const Camera& camera)
     m_deviceContext->VSSetShader(m_vert.Get(), NULL, 0);
     m_deviceContext->PSSetShader(m_pixel.Get(), NULL, 0);
     // set perframe buffers
-    m_perFrameBuffer.m_cache.view = camera.viewMatrix();
-    m_perFrameBuffer.m_cache.projection = convertProjection(camera.projectionMatrix());
-    m_perFrameBuffer.VSSet(m_deviceContext, 1);
-    m_perFrameBuffer.Update(m_deviceContext);
+    if (camera.IsDirty())
+    {
+        m_perFrameBuffer.m_cache.view = camera.ViewMatrix();
+        m_perFrameBuffer.m_cache.projection = convertProjection(camera.ProjectionMatrix());
+        m_perFrameBuffer.VSSet(m_deviceContext, 1);
+        m_perFrameBuffer.Update(m_deviceContext);
+    }
     // set viewport
     const Extent2i& extent = m_pWindow->GetFrameBufferExtent();
     D3D11_VIEWPORT viewport;
@@ -53,11 +61,6 @@ void D3d11Renderer::Render(const Camera& camera)
     m_deviceContext->Draw(3, 0);
     m_swapChain->Present(0, 0); // m_swapChain->Present(1, 0);
     // present
-}
-
-void D3d11Renderer::Finalize()
-{
-
 }
 
 void D3d11Renderer::createDevice()

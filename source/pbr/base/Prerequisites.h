@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 #include <string>
 #include <vector>
 #include <memory>
@@ -9,6 +10,7 @@
 namespace pbr {
     using std::string;
     using std::wstring;
+    using std::array;
     using std::vector;
     using std::unique_ptr;
     using std::shared_ptr;

@@ -20,6 +20,7 @@ private:
     unique_ptr<Window>      m_window;
     unique_ptr<Renderer>    m_renderer;
     Camera                  m_camera;
+    CameraController        m_cameraController;
 };
 
 } // namespace pbr

@@ -48,14 +48,16 @@ void Application::initialize()
 
     // initialize camera
     mat4 transform = glm::translate(mat4(1.0f), vec3(0.0f, 0.0f, 3.0f));
-    m_camera.setTransformation(transform);
+    m_camera.SetTransformation(transform);
+    m_camera.SetAspect(-1.0f); // force update
+    m_cameraController.SetCamera(&m_camera);
 }
 
 void Application::Mainloop()
 {
     m_window->PollEvents();
-    // set camera aspect
-    m_camera.setAspect(m_window->GetAspectRatio());
+    // update camera
+    m_cameraController.Update(m_window.get());
     m_renderer->Render(m_camera);
     m_window->SwapBuffers();
 }

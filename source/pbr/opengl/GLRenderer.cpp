@@ -55,8 +55,11 @@ void GLRenderer::Render(const Camera& camera)
     glClear(GL_COLOR_BUFFER_BIT);
     // drawing
     m_pbrProgram.use();
-    m_pbrProgram.setUniform("u_per_frame.view", camera.viewMatrix());
-    m_pbrProgram.setUniform("u_per_frame.projection", camera.projectionMatrix());
+    if (camera.IsDirty())
+    {
+        m_pbrProgram.setUniform("u_per_frame.view", camera.ViewMatrix());
+        m_pbrProgram.setUniform("u_per_frame.projection", camera.ProjectionMatrix());
+    }
     glDrawArrays(GL_TRIANGLES, 0, 3);
 }
 
