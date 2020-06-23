@@ -3,6 +3,16 @@
 
 namespace pbr { namespace gl {
 
+    struct PerDrawData
+    {
+        uint32_t vao = 0;
+        uint32_t ebo = 0;
+        array<uint32_t, 3> vbos = { 0, 0, 0 };
+        uint32_t count = 0;
+    };
+
+    static_assert(sizeof(PerDrawData) == 6 * sizeof(uint32_t));
+
     class GlslProgram
     {
     public:
@@ -28,6 +38,8 @@ namespace pbr { namespace gl {
 
             setUniform(location, val);
         }
+
+        void destroy();
     private:
         GLuint m_handle = 0;
     };

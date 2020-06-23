@@ -16,10 +16,11 @@ public:
     virtual void Finalize() override;
 private:
     void compileShaders();
+    void createSphereBuffers();
+    void destroySphereBuffers();
 private:
     GlslProgram m_pbrProgram;
-    GLuint m_triangleBuffer = 0;
-    GLuint m_triangleVao = 0;
+    PerDrawData m_sphere;
 };
 
 } } // namespace pbr::gl

@@ -9,6 +9,12 @@ void GlslProgram::use() const
     glUseProgram(m_handle);
 }
 
+void GlslProgram::destroy()
+{
+    glDeleteProgram(m_handle);
+    m_handle = 0;
+}
+
 GLint GlslProgram::getUniformLocation(const char* name) const
 {
     GLint location = glGetUniformLocation(m_handle, name);

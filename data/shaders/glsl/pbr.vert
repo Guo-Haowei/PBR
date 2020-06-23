@@ -1,8 +1,11 @@
 #version 410 core
 layout (location = 0) in vec3 in_position;
-layout (location = 1) in vec3 in_color;
+layout (location = 1) in vec3 in_normal;
+layout (location = 2) in vec2 in_uv;
 
-layout (location = 0) out vec3 pass_color;
+out vec3 pass_normal;
+out vec3 pass_position;
+out vec2 pass_uv;
 
 struct PerFrameBuffer
 {
@@ -16,5 +19,7 @@ void main()
 {
     vec4 world_position = vec4(in_position, 1.0);
     gl_Position = u_per_frame.projection * u_per_frame.view * world_position;
-    pass_color = in_color;
+    pass_position = world_position.xyz;
+    pass_normal = in_normal;
+    pass_uv = in_uv;
 }
