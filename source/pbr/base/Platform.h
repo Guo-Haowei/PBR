@@ -48,11 +48,7 @@
 #   include <GLFW/glfw3native.h>
 #endif
 
-#if TARGET_PLATFORM == PLATFORM_EMSCRIPTEN
-#   define GLSL_DIR DATA_DIR "shaders/glsles/"
-#else
-#   define GLSL_DIR DATA_DIR "shaders/glsl/"
-#endif
+#define GLSL_DIR DATA_DIR "shaders/glsl/"
 #define HLSL_DIR DATA_DIR "shaders/hlsl/"
 #define SPIRV_DIR DATA_DIR "shaders/spirv/"
 

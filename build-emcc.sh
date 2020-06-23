@@ -1,4 +1,9 @@
 #!/bin/bash
+# convert shader strings
+python ./scripts/shader2str.py
+mv ./scripts/temp/shaders.generated.h ./source/pbr/opengl/
+
+# compile
 source ./external/emsdk/emsdk_env.sh || exit 1
 if [ ! -d build-emcc ]; then
     mkdir build-emcc || exit 1
