@@ -3,6 +3,7 @@ ADD_LIBRARY(pbr
     core/Camera.cpp
     core/Renderer.cpp
     core/Window.cpp
+    Mesh.cpp
     Utility.cpp
     main.cpp
 )

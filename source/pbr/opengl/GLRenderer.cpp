@@ -4,6 +4,7 @@
 #include "GLRenderer.h"
 #include "GLPrerequisites.h"
 #include "Utility.h"
+#include <cstddef> // offsetof
 using std::cout;
 using std::endl;
 
@@ -33,6 +34,7 @@ void GLRenderer::Initialize()
     }
 #endif
 
+    glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glFrontFace(GL_CW);
 }
@@ -52,7 +54,7 @@ void GLRenderer::Render(const Camera& camera)
     glViewport(0, 0, extent.width, extent.height);
     // clear screen
     glClearColor(0.3f, 0.4f, 0.3f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // drawing
     m_pbrProgram.use();
     if (camera.IsDirty())
@@ -60,7 +62,7 @@ void GLRenderer::Render(const Camera& camera)
         m_pbrProgram.setUniform("u_per_frame.view", camera.ViewMatrix());
         m_pbrProgram.setUniform("u_per_frame.projection", camera.ProjectionMatrix());
     }
-    glDrawArrays(GL_TRIANGLES, 0, m_sphere.count);
+    glDrawElements(GL_TRIANGLES, m_sphere.indexCount, GL_UNSIGNED_INT, 0);
 }
 
 void GLRenderer::Resize(const Extent2i& extent)
@@ -105,33 +107,28 @@ void GLRenderer::compileShaders()
 
 void GLRenderer::createSphereBuffers()
 {
-    const Mesh sphere = createSphereMesh();
-    m_sphere.count = static_cast<uint32_t>(sphere.indices.size());
+    m_sphere.indexCount = 3 * g_sphere.indices.size();
     glGenVertexArrays(1, &m_sphere.vao);
     glBindVertexArray(m_sphere.vao);
-    glGenBuffers(4, &m_sphere.ebo);
+    glGenBuffers(2, &m_sphere.vbo);
     // ebo
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_sphere.ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_sphere.count * sizeof(uint32_t), sphere.indices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, g_sphere.indices.size() * sizeof(uvec3), g_sphere.indices.data(), GL_STATIC_DRAW);
     // positions
-    glBindBuffer(GL_ARRAY_BUFFER, m_sphere.vbos[0]);
-    glBufferData(GL_ARRAY_BUFFER, sphere.positions.size() * sizeof(vec3), sphere.positions.data(), GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), 0);
+    glBindBuffer(GL_ARRAY_BUFFER, m_sphere.vbo);
+    glBufferData(GL_ARRAY_BUFFER, g_sphere.vertices.size() * sizeof(Vertex), g_sphere.vertices.data(), GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
     glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, m_sphere.vbos[1]);
-    glBufferData(GL_ARRAY_BUFFER, sphere.normals.size() * sizeof(vec3), sphere.normals.data(), GL_STATIC_DRAW);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), 0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv));
     glEnableVertexAttribArray(1);
-    glBindBuffer(GL_ARRAY_BUFFER, m_sphere.vbos[2]);
-    glBufferData(GL_ARRAY_BUFFER, sphere.uvs.size() * sizeof(vec2), sphere.uvs.data(), GL_STATIC_DRAW);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(vec2), 0);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
     glEnableVertexAttribArray(2);
 }
 
 void GLRenderer::destroySphereBuffers()
 {
     glDeleteVertexArrays(1, &m_sphere.vao);
-    glDeleteVertexArrays(4, &m_sphere.ebo);
+    glDeleteVertexArrays(2, &m_sphere.vbo);
 }
 
 } } // namespace pbr::gl

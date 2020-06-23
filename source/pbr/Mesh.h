@@ -3,96 +3,39 @@
 
 namespace pbr {
 
-struct Vertex
+struct VertexPosColor
 {
     vec3 in_position;
     vec3 in_color;
 };
 
-static const Vertex g_triangle[] =
+static const VertexPosColor g_triangle[] =
 {
     { { 0.0f, 0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f } },
     { { 0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f } },
     { { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f } },
 };
 
-struct Mesh
+struct Vertex
 {
-    vector<vec3>        positions;
-    vector<vec3>        normals;
-    vector<vec2>        uvs;
-    vector<uint32_t>    indices;
+    vec3 position;
+    vec2 uv;
+    vec3 normal;
+
+    Vertex(const vec3& pos, const vec2& uv, const vec3& normal)
+        : position(pos), uv(uv), normal(normal)
+    {
+    }
 };
 
-static Mesh createSphereMesh()
+struct Mesh
 {
-    Mesh sphere;
-    auto& positions = sphere.positions;
-    auto& uv = sphere.uvs;
-    auto& normals = sphere.normals;
-    auto& indices = sphere.indices;
+    vector<Vertex> vertices;
+    vector<uvec3>  indices;
+};
 
-    const unsigned int X_SEGMENTS = 64;
-    const unsigned int Y_SEGMENTS = 64;
-    const float PI = 3.14159265359;
-    for (unsigned int y = 0; y <= Y_SEGMENTS; ++y)
-    {
-        for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
-        {
-            float xSegment = (float)x / (float)X_SEGMENTS;
-            float ySegment = (float)y / (float)Y_SEGMENTS;
-            float xPos = glm::cos(xSegment * 2.0f * PI) * glm::sin(ySegment * PI);
-            float yPos = glm::cos(ySegment * PI);
-            float zPos = glm::sin(xSegment * 2.0f * PI) * glm::sin(ySegment * PI);
+extern Mesh createSphereMesh(float radius = 1.0f, uint32_t widthSegment = 32, uint32_t heightSegment = 32);
 
-            positions.push_back(vec3(xPos, yPos, zPos));
-            uv.push_back(vec2(xSegment, ySegment));
-            normals.push_back(vec3(xPos, yPos, zPos));
-        }
-    }
-
-    bool oddRow = false;
-    for (unsigned int y = 0; y < Y_SEGMENTS; ++y)
-    {
-        if (!oddRow) // even rows: y == 0, y == 2; and so on
-        {
-            for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
-            {
-                indices.push_back(y       * (X_SEGMENTS + 1) + x);
-                indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
-            }
-        }
-        else
-        {
-            for (int x = X_SEGMENTS; x >= 0; --x)
-            {
-                indices.push_back((y + 1) * (X_SEGMENTS + 1) + x);
-                indices.push_back(y       * (X_SEGMENTS + 1) + x);
-            }
-        }
-        oddRow = !oddRow;
-    }
-
-    std::vector<float> data;
-    for (unsigned int i = 0; i < positions.size(); ++i)
-    {
-        data.push_back(positions[i].x);
-        data.push_back(positions[i].y);
-        data.push_back(positions[i].z);
-        if (uv.size() > 0)
-        {
-            data.push_back(uv[i].x);
-            data.push_back(uv[i].y);
-        }
-        if (normals.size() > 0)
-        {
-            data.push_back(normals[i].x);
-            data.push_back(normals[i].y);
-            data.push_back(normals[i].z);
-        }
-    }
-
-    return sphere;
-}
+static const Mesh g_sphere = createSphereMesh();
 
 } // namespace pbr

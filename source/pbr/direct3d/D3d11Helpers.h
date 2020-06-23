@@ -10,6 +10,13 @@ struct PerFrameCache
     mat4 projection;
 };
 
+struct PerDrawData
+{
+    ComPtr<ID3D11Buffer> vertexBuffer;
+    ComPtr<ID3D11Buffer> indexBuffer;
+    uint32_t indexCount = 0;
+};
+
 static mat4& convertProjection(mat4& projection)
 {
     projection = mat4( { 1, 0, 0, 0 }, { 0, 1, 0, 0 }, { 0, 0, 1, 0 }, { 0, 0, 0.5, 1} ) *

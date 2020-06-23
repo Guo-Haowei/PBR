@@ -26,6 +26,9 @@ namespace pbr {
     using glm::vec2;
     using glm::vec3;
     using glm::vec4;
+
+    using glm::uvec3;
+
     using glm::mat4;
 
     static const float Pi = glm::pi<float>();

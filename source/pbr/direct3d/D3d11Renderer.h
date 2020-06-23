@@ -21,6 +21,7 @@ private:
     void createRenderTarget(const Extent2i& extent);
     void cleanupRenderTarget();
     void compileShaders();
+    void createSphereBuffers();
 private:
     HWND                            m_hwnd;
     ComPtr<ID3D11Device>            m_device;
@@ -39,12 +40,13 @@ private:
     ComPtr<ID3DBlob>                m_vertBlob;
     // input
     ComPtr<ID3D11InputLayout>       m_inputLayout;
-    ComPtr<ID3D11Buffer>            m_vertexBuffer;
     ComPtr<ID3D11Buffer>            m_constantBuffer;
     // buffers
     PerFrameBuffer                  m_perFrameBuffer;
     // rasterizer
     ComPtr<ID3D11RasterizerState>   m_rasterizer;
+
+    PerDrawData                     m_sphere;
 };
 
 } } // namespace pbr::d3d11

@@ -3,6 +3,7 @@
 #include "D3d11Renderer.h"
 #include "D3dDebug.h"
 #include <iostream>
+#include <cstddef> // offsetof
 
 namespace pbr { namespace d3d11 {
 
@@ -54,11 +55,12 @@ void D3d11Renderer::Render(const Camera& camera)
     m_deviceContext->IASetInputLayout(m_inputLayout.Get());
     UINT stride = sizeof(Vertex);
     UINT offset = 0;
-    m_deviceContext->IASetVertexBuffers(0, 1, m_vertexBuffer.GetAddressOf(), &stride, &offset);
+    m_deviceContext->IASetVertexBuffers(0, 1, m_sphere.vertexBuffer.GetAddressOf(), &stride, &offset);
+    m_deviceContext->IASetIndexBuffer(m_sphere.indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
     // draw
     m_deviceContext->ClearRenderTargetView(m_immediateRenderTarget.Get(), clearColor);
     m_deviceContext->ClearDepthStencilView(m_immediateDepthStencil.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
-    m_deviceContext->Draw(3, 0);
+    m_deviceContext->DrawIndexed(m_sphere.indexCount, 0, 0);
     m_swapChain->Present(0, 0); // m_swapChain->Present(1, 0);
     // present
 }
@@ -142,8 +144,9 @@ void D3d11Renderer::PrepareGpuResources()
     // input layout
     D3D11_INPUT_ELEMENT_DESC inputElementDescs[] =
     {
-        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
-        { "COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, sizeof(vec3), D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(Vertex, position), D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(Vertex, uv), D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(Vertex, normal), D3D11_INPUT_PER_VERTEX_DATA, 0 },
     };
 
     hr = m_device->CreateInputLayout(
@@ -156,22 +159,8 @@ void D3d11Renderer::PrepareGpuResources()
 
     D3D_THROW_IF_FAILED(hr, "Failed to create input layout");
 
-    // vertex buffer
-    {
-        D3D11_BUFFER_DESC bufferDesc;
-        ZeroMemory(&bufferDesc, sizeof(D3D11_BUFFER_DESC));
-        bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-        bufferDesc.ByteWidth = sizeof(g_triangle);
-        bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-        bufferDesc.CPUAccessFlags = 0;
-        bufferDesc.MiscFlags = 0;
-
-        D3D11_SUBRESOURCE_DATA srData;
-        ZeroMemory(&srData, sizeof(D3D11_SUBRESOURCE_DATA));
-        srData.pSysMem = g_triangle;
-        D3D_THROW_IF_FAILED(m_device->CreateBuffer(&bufferDesc, &srData, m_vertexBuffer.GetAddressOf()),
-                            "Failed to create vertex buffer");
-    }
+    // sphere buffer
+    createSphereBuffers();
 
     // constant buffer
     m_perFrameBuffer.Create(m_device);
@@ -257,6 +246,44 @@ void D3d11Renderer::compileShaders()
 
         m_deviceContext->VSSetShader(m_vert.Get(), 0, 0);
         m_deviceContext->PSSetShader(m_pixel.Get(), 0, 0);
+    }
+}
+
+void D3d11Renderer::createSphereBuffers()
+{
+    m_sphere.indexCount = 3 * g_sphere.indices.size();
+
+    {
+        // vertex buffer
+        D3D11_BUFFER_DESC bufferDesc;
+        ZeroMemory(&bufferDesc, sizeof(D3D11_BUFFER_DESC));
+        bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
+        bufferDesc.ByteWidth = sizeof(Vertex) * g_sphere.vertices.size();
+        bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+        bufferDesc.CPUAccessFlags = 0;
+        bufferDesc.MiscFlags = 0;
+
+        D3D11_SUBRESOURCE_DATA data;
+        ZeroMemory(&data, sizeof(D3D11_SUBRESOURCE_DATA));
+        data.pSysMem = g_sphere.vertices.data();
+        D3D_THROW_IF_FAILED(m_device->CreateBuffer(&bufferDesc, &data, m_sphere.vertexBuffer.GetAddressOf()),
+            "Failed to create vertex buffer");
+    }
+    {
+        // index buffer
+        D3D11_BUFFER_DESC bufferDesc;
+        ZeroMemory(&bufferDesc, sizeof(D3D11_BUFFER_DESC));
+        bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
+        bufferDesc.ByteWidth = sizeof(uvec3) * g_sphere.indices.size();
+        bufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+        bufferDesc.CPUAccessFlags = 0;
+        bufferDesc.MiscFlags = 0;
+
+        D3D11_SUBRESOURCE_DATA data;
+        ZeroMemory(&data, sizeof(D3D11_SUBRESOURCE_DATA));
+        data.pSysMem = g_sphere.indices.data();
+        D3D_THROW_IF_FAILED(m_device->CreateBuffer(&bufferDesc, &data, m_sphere.indexBuffer.GetAddressOf()),
+            "Failed to create index buffer");
     }
 }
 
