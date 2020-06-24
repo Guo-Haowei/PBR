@@ -22,9 +22,9 @@ private:
     void createSphereBuffers();
     void destroySphereBuffers();
 private:
+    const Window* m_pWindow;
     GlslProgram m_pbrProgram;
     PerDrawData m_sphere;
-    const Window* m_pWindow;
 };
 
 } } // namespace pbr::gl
