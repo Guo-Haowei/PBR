@@ -1,4 +1,5 @@
 #pragma once
+#include "GLPrerequisites.h"
 #include "GLHelpers.h"
 #include "core/Camera.h"
 #include "core/Window.h"

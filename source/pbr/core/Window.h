@@ -10,7 +10,13 @@ namespace pbr {
 class Window
 {
 public:
-    enum { BUTTON_LEFT = 0 }; // TODO: check with glfw
+    enum GLFW_BUTTON
+    {
+        BUTTON_LEFT     = 0, // #define GLFW_MOUSE_BUTTON_LEFT      GLFW_MOUSE_BUTTON_1
+        BUTTON_RIGHT    = 1, // #define GLFW_MOUSE_BUTTON_RIGHT     GLFW_MOUSE_BUTTON_2
+        BUTTON_MIDDLE   = 2, // #define GLFW_MOUSE_BUTTON_MIDDLE    GLFW_MOUSE_BUTTON_3
+    };
+public:
     void Initialize(const WindowCreateInfo& info);
     void Finalize();
     bool ShouldClose() const;
@@ -24,7 +30,7 @@ public:
     inline const Extent2i& GetFrameBufferExtent() const { return m_framebufferExtent; }
     inline void SetWindowExtent(const Extent2i& extent) { m_windowExtent = extent; }
     inline void SetFrameBufferExtent(const Extent2i& extent) { m_framebufferExtent = extent; }
-    inline int IsButtonDown(int button) const { return m_buttons[button]; }
+    inline int IsButtonDown(GLFW_BUTTON button) const { return m_buttons[button]; }
     inline const vec2& GetLastFrameCursorPos() const { return m_lastFrameCursorPos; }
     inline const vec2& GetThisFrameCursorPos() const { return m_thisFrameCursorPos; }
     inline double GetScroll() const { return m_scroll; }

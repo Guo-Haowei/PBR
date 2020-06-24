@@ -20,8 +20,6 @@ public:
     virtual ~Renderer() = default;
 protected:
     Renderer(const Window* pWindow);
-protected:
-    const Window* m_pWindow = nullptr;
 };
 
 } // namespace pbr
