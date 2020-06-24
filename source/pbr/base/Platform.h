@@ -23,5 +23,3 @@
 #   define PBR_GL_VERSION_MAJOR 4
 #   define PBR_GL_VERSION_MINOR 1
 #endif
-
-#define HLSL_DIR DATA_DIR "shaders/hlsl/"

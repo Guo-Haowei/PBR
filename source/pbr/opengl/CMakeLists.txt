@@ -9,7 +9,7 @@ TARGET_INCLUDE_DIRECTORIES(gl_renderer PRIVATE
 )
 
 IF (NOT ${TARGET_PLATFORM} MATCHES "emscripten")
-    TARGET_LINK_LIBRARIES(gl_renderer PRIVATE glad glfw)
+    TARGET_LINK_LIBRARIES(gl_renderer PRIVATE glad)
     TARGET_INCLUDE_DIRECTORIES(gl_renderer PRIVATE
         ${PROJECT_SOURCE_DIR}/external/glfw/include
         ${PROJECT_SOURCE_DIR}/external/glad/include

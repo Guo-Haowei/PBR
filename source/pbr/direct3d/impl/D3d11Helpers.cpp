@@ -1,7 +1,6 @@
 #include "D3d11Helpers.h"
 #include "D3dDebug.h"
 #include <d3dcompiler.h>
-#pragma comment(lib, "d3dcompiler.lib")
 
 namespace pbr { namespace d3d11 {
 
