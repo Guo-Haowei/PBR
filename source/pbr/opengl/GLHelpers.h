@@ -36,6 +36,14 @@ namespace pbr { namespace gl {
 
             setUniform(location, val);
         }
+        template<typename T> void setUniform(const string& name, const T& val)
+        {
+            GLint location = getUniformLocation(name.c_str());
+            if (location == INVALID_UNIFORM_LOCATION)
+                return;
+
+            setUniform(location, val);
+        }
 
         void destroy();
     private:

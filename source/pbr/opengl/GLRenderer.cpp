@@ -4,12 +4,10 @@
 #include "GLRenderer.h"
 #include "GLPrerequisites.h"
 #include "Utility.h"
+#include "Scene.h"
 #if TARGET_PLATFORM == PLATFORM_EMSCRIPTEN
 #   include "shaders.generated.h"
 #endif
-#include <cstddef> // offsetof
-using std::cout;
-using std::endl;
 
 namespace pbr { namespace gl {
 
@@ -55,8 +53,6 @@ void GLRenderer::Render(const Camera& camera)
     // set viewport
     const Extent2i& extent = m_pWindow->GetFrameBufferExtent();
     glViewport(0, 0, extent.width, extent.height);
-    // clear screen
-    glClearColor(0.3f, 0.4f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // drawing
     m_pbrProgram.use();
@@ -64,9 +60,11 @@ void GLRenderer::Render(const Camera& camera)
     {
         m_pbrProgram.setUniform("u_per_frame.view", camera.ViewMatrix());
         m_pbrProgram.setUniform("u_per_frame.projection", camera.ProjectionMatrixGl());
+        m_pbrProgram.setUniform("u_view_pos", camera.GetViewPos());
     }
 
-    glDrawElementsInstanced(GL_TRIANGLES, m_sphere.indexCount, GL_UNSIGNED_INT, 0, 16);
+    const int size = 7;
+    glDrawElementsInstanced(GL_TRIANGLES, m_sphere.indexCount, GL_UNSIGNED_INT, 0, size * size);
 
     // for (const mat4& m : transforms)
     // {
@@ -117,6 +115,9 @@ void GLRenderer::compileShaders()
         GLuint fragmentShaderHandle = GlslProgram::createShaderFromString(fragSource, GL_FRAGMENT_SHADER);
         SHADER_COMPILING_END_INFO(PBR_FRAG);
         m_pbrProgram = GlslProgram::create(vertexShaderHandle, fragmentShaderHandle);
+
+        // upload constant buffers
+        uploadLightUniforms();
     }
 }
 
@@ -144,6 +145,17 @@ void GLRenderer::destroySphereBuffers()
 {
     glDeleteVertexArrays(1, &m_sphere.vao);
     glDeleteVertexArrays(2, &m_sphere.vbo);
+}
+
+void GLRenderer::uploadLightUniforms()
+{
+    m_pbrProgram.use();
+    for (size_t i = 0; i < g_lights.size(); ++i)
+    {
+        const string light = "u_lights[" + std::to_string(i) + "].";
+        m_pbrProgram.setUniform(light + "position", g_lights[i].position);
+        m_pbrProgram.setUniform(light + "color", g_lights[i].color);
+    }
 }
 
 } } // namespace pbr::gl

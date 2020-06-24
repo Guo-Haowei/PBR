@@ -1,6 +1,7 @@
 #pragma once
 #include "base/Definitions.h"
 #include "D3dDebug.h"
+#include "Scene.h"
 
 namespace pbr { namespace d3d11 {
 
@@ -22,6 +23,18 @@ struct PerDrawData
     uint32_t indexCount = 0;
 };
 
+struct LightDataCache
+{
+    array<Light, 4> lights;
+};
+
+struct ViewPositionCache
+{
+    vec4 view_position;
+};
+
+static_assert(sizeof(LightDataCache) == 4 * 2 * sizeof(vec4));
+
 static mat4& convertProjection(mat4& projection)
 {
     // projection = mat4( { 1, 0, 0, 0 }, { 0, 1, 0, 0 }, { 0, 0, 1, 0 }, { 0, 0, 0.5, 1} ) *
@@ -33,6 +46,8 @@ static mat4& convertProjection(mat4& projection)
 template<class Cache> class ConstantBuffer
 {
 public:
+    inline size_t BufferSize() const { return sizeof(Cache); }
+
     ConstantBuffer() = default;
 
     void Create(ComPtr<ID3D11Device>& device)
@@ -76,6 +91,9 @@ private:
 
 typedef ConstantBuffer<PerFrameCache> PerFrameBuffer;
 typedef ConstantBuffer<PerDrawCache> PerDrawBuffer;
+typedef ConstantBuffer<LightDataCache> LightBuffer;
+typedef ConstantBuffer<ViewPositionCache> ViewPositionBuffer;
+
 
 class HlslShader
 {

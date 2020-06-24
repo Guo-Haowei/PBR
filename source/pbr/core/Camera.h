@@ -9,6 +9,7 @@ namespace pbr {
     {
     public:
         Camera(float fov = QuarterPi, float aspect = 1.0f, float zNear = 0.1f, float zFar = 100.0f);
+        inline const vec4& GetViewPos() const { return m_transform[3]; }
         mat4 ViewMatrix() const;
         mat4 ProjectionMatrixD3d() const;
         mat4 ProjectionMatrixGl() const;

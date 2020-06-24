@@ -44,6 +44,8 @@ private:
     // buffers
     PerFrameBuffer                  m_perFrameBuffer;
     PerDrawBuffer                   m_perDrawBuffer;
+    LightBuffer                     m_lightBuffer;
+    ViewPositionBuffer              m_viewPositionBuffer;
     // rasterizer
     ComPtr<ID3D11RasterizerState>   m_rasterizer;
     PerDrawData                     m_sphere;

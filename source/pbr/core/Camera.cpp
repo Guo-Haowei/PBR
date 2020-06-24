@@ -18,19 +18,19 @@ mat4 Camera::ViewMatrix() const
     const vec3 eye(position);
     const vec3 center(position - w);
     const vec3 up(v);
-    return glm::lookAtLH(eye, center, up);
+    return glm::lookAtRH(eye, center, up);
 }
 
 mat4 Camera::ProjectionMatrixD3d() const
 {
-    return glm::perspectiveLH_ZO(m_fov, m_aspect, m_zNear, m_zFar);
+    return mat4({1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 0.5, 0}, {0, 0, 0, 1}) *
+           mat4({1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 1, 1}) *
+           ProjectionMatrixGl();
 }
 
 mat4 Camera::ProjectionMatrixGl() const
 {
-    return mat4({1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, -1, 1}) *
-           mat4({1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 2, 0}, {0, 0, 0, 1}) *
-           ProjectionMatrixD3d();
+    return glm::perspective(m_fov, m_aspect, m_zNear, m_zFar);
 }
 
 CameraController::CameraController(Camera* pCamera)

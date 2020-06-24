@@ -16,6 +16,7 @@ public:
     virtual void Finalize() override;
 private:
     void compileShaders();
+    void uploadLightUniforms();
     void createSphereBuffers();
     void destroySphereBuffers();
 private:

@@ -27,12 +27,12 @@ void D3d11Renderer::Finalize()
 void D3d11Renderer::Render(const Camera& camera)
 {
     // clear
-    static const float clearColor[4] = { 0.4f, 0.3f, 0.3f, 1.0f };
+    static const float clearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
     // set render target
     m_deviceContext->OMSetRenderTargets(1, m_immediateRenderTarget.GetAddressOf(), m_immediateDepthStencil.Get());
     // shaders
-    m_deviceContext->VSSetShader(m_vert.Get(), NULL, 0);
-    m_deviceContext->PSSetShader(m_pixel.Get(), NULL, 0);
+    //m_deviceContext->VSSetShader(m_vert.Get(), NULL, 0);
+    //m_deviceContext->PSSetShader(m_pixel.Get(), NULL, 0);
     // set perframe buffers
     if (camera.IsDirty())
     {
@@ -40,6 +40,10 @@ void D3d11Renderer::Render(const Camera& camera)
         m_perFrameBuffer.m_cache.projection = convertProjection(camera.ProjectionMatrixD3d());
         m_perFrameBuffer.VSSet(m_deviceContext, 1);
         m_perFrameBuffer.Update(m_deviceContext);
+
+        m_viewPositionBuffer.m_cache.view_position = camera.GetViewPos();
+        m_viewPositionBuffer.PSSet(m_deviceContext, 1);
+        m_viewPositionBuffer.Update(m_deviceContext);
     }
     // set viewport
     const Extent2i& extent = m_pWindow->GetFrameBufferExtent();
@@ -61,16 +65,11 @@ void D3d11Renderer::Render(const Camera& camera)
     m_deviceContext->ClearRenderTargetView(m_immediateRenderTarget.Get(), clearColor);
     m_deviceContext->ClearDepthStencilView(m_immediateDepthStencil.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-    // for (const mat4& m : transforms)
-    // {
-    //     m_perDrawBuffer.m_cache.transform = m;
-    //     m_perDrawBuffer.VSSet(m_deviceContext, 0);
-    //     m_perDrawBuffer.Update(m_deviceContext);
-    //     m_deviceContext->DrawIndexed(m_sphere.indexCount, 0, 0);
-    // }
-    m_deviceContext->DrawIndexedInstanced(m_sphere.indexCount, 16, 0, 0, 0);
-    m_swapChain->Present(0, 0); // m_swapChain->Present(1, 0);
+    const int size = 7;
+    m_deviceContext->DrawIndexedInstanced(m_sphere.indexCount, size * size, 0, 0, 0);
     // present
+    m_swapChain->Present(1, 0); // vsync
+    // m_swapChain->Present(0, 0);
 }
 
 void D3d11Renderer::createDevice()
@@ -124,11 +123,11 @@ void D3d11Renderer::createSwapchain()
     desc.BufferDesc = bufferDesc;
     desc.SampleDesc.Count = 1;
     desc.SampleDesc.Quality = 0;
-    desc.BufferCount = 1;
+    desc.BufferCount = 2;
     desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
     desc.OutputWindow = m_hwnd;
     desc.Windowed = TRUE;
-    desc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+    desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 
     D3D_THROW_IF_FAILED(m_dxgiFactory->CreateSwapChain(m_device.Get(), &desc, m_swapChain.GetAddressOf()),
         "Failed to create swap chain");
@@ -173,6 +172,12 @@ void D3d11Renderer::PrepareGpuResources()
     // constant buffer
     m_perFrameBuffer.Create(m_device);
     m_perDrawBuffer.Create(m_device);
+    m_lightBuffer.Create(m_device);
+    m_viewPositionBuffer.Create(m_device);
+    memcpy(&m_lightBuffer.m_cache, &g_lights, m_lightBuffer.BufferSize());
+    //m_deviceContext->PSSetShader(m_pixel.Get(), 0, 0);
+    m_lightBuffer.PSSet(m_deviceContext, 0);
+    m_lightBuffer.Update(m_deviceContext);
 
     // rasterizer
     {
@@ -227,31 +232,32 @@ void D3d11Renderer::cleanupRenderTarget()
 }
 
 // shaders
-#define PBR_SHADER "pbr.hlsl"
+#define PBR_VERT_SHADER "pbr.vert.hlsl"
+#define PBR_PIXEL_SHADER "pbr.pixel.hlsl"
 
 void D3d11Renderer::compileShaders()
 {
     HRESULT hr;
     {
-        SHADER_COMPILING_START_INFO(PBR_SHADER ".vert");
-        HlslShader::CompileShader(HLSL_DIR PBR_SHADER, "vs_main", "vs_5_0", m_vertBlob);
+        SHADER_COMPILING_START_INFO(PBR_VERT_SHADER);
+        HlslShader::CompileShader(HLSL_DIR PBR_VERT_SHADER, "vs_main", "vs_5_0", m_vertBlob);
         hr = m_device->CreateVertexShader(
             m_vertBlob->GetBufferPointer(),
             m_vertBlob->GetBufferSize(),
             NULL,
             m_vert.GetAddressOf());
         D3D_THROW_IF_FAILED(hr, "Failed to create vertex shader");
-        SHADER_COMPILING_END_INFO(PBR_SHADER ".vert");
-        SHADER_COMPILING_START_INFO(PBR_SHADER ".pixel");
+        SHADER_COMPILING_END_INFO(PBR_VERT_SHADER);
+        SHADER_COMPILING_START_INFO(PBR_PIXEL_SHADER);
         ComPtr<ID3DBlob> pixelBlob;
-        HlslShader::CompileShader(HLSL_DIR PBR_SHADER, "ps_main", "ps_5_0", pixelBlob);
+        HlslShader::CompileShader(HLSL_DIR PBR_PIXEL_SHADER, "ps_main", "ps_5_0", pixelBlob);
         hr = m_device->CreatePixelShader(
             pixelBlob->GetBufferPointer(),
             pixelBlob->GetBufferSize(),
             NULL,
             m_pixel.GetAddressOf());
         D3D_THROW_IF_FAILED(hr, "Failed to create pixel shader");
-        SHADER_COMPILING_END_INFO(PBR_SHADER ".pixel");
+        SHADER_COMPILING_END_INFO(PBR_PIXEL_SHADER);
 
         m_deviceContext->VSSetShader(m_vert.Get(), 0, 0);
         m_deviceContext->PSSetShader(m_pixel.Get(), 0, 0);

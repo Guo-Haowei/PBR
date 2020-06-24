@@ -1,32 +1,32 @@
-#version 410 core
 #define PI 3.14159265358979323846264338327950288
 #define MAX_LIGHT_COUNT 4
 
-struct VS_OUT
+struct out_vs
 {
-    vec3 position;
-    float metallic;
-    vec3 normal;
-    float roughness;
-    vec2 uv;
+    float4 sv_position : SV_POSITION;
+    float4 position : POSITION; // pack metallic in w component
+    float4 normal : NORMAL; // pack roughess in w component
+    float2 uv : TEXCOORD;
 };
-
-in VS_OUT vs_pass;
-
-layout (location = 0) out vec4 out_color;
 
 struct Light
 {
-    vec3 position;
-    vec3 color;
+    float4 position;
+    float4 color;
 };
 
-uniform Light u_lights[MAX_LIGHT_COUNT];
+cbuffer LightBuffer: register(b0)
+{
+    Light g_lights[MAX_LIGHT_COUNT];
+};
 
-uniform vec4 u_view_pos;
+cbuffer PerFrameBuffer : register(b1)
+{
+    float4 view_position;
+};
 
 // NDF(n, h, alpha) = alpha^2 / (pi * ((n dot h)^2 * (alpha^2 - 1) + 1)^2)
-float DistributionGGX(in vec3 N, in vec3 H, float roughness)
+float DistributionGGX(in float3 N, in float3 H, float roughness)
 {
     float a = roughness * roughness;
     float a2 = a * a;
@@ -52,7 +52,7 @@ float G_SchlickGGX(float NdotV, float roughness)
     return nom / denom;
 }
 
-float GeometrySmith(in vec3 N, in vec3 V, in vec3 L, float roughness)
+float GeometrySmith(in float3 N, in float3 V, in float3 L, float roughness)
 {
     float NdotV = max(dot(N, V), 0.0);
     float NdotL = max(dot(N, L), 0.0);
@@ -63,56 +63,60 @@ float GeometrySmith(in vec3 N, in vec3 V, in vec3 L, float roughness)
 }
 
 // Fresnel approximation F0 + (1 - F0) * (1 - (cosine))^5
-vec3 FresnelSchlick(float cosTheta, in vec3 F0)
+float3 FresnelSchlick(float cosTheta, in float3 F0)
 {
     return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
-const vec3 albedo = vec3(0.5, 0.0, 0.0);
-const float ao = 1.0;
-
-void main()
+float3 mix(float3 x, float3 y, float a)
 {
-    // variables
-    vec3 position = vs_pass.position;
-    float metallic = vs_pass.metallic;
-    float roughness = vs_pass.roughness;
+    return (1.0 - a) * x + a * y;
+}
 
-    vec3 N = normalize(vs_pass.normal);
-    vec3 V = normalize(u_view_pos.xyz - position);
+static const float3 albedo = float3(0.5, 0.0, 0.0);
+static const float ao = 0.0;
+
+float4 ps_main(out_vs input) : SV_TARGET
+{
+    float3 position = input.position.xyz;
+    float metallic = input.position.w;
+    float roughness = input.normal.w;
+
+    float3 N = normalize(input.normal.xyz);
+    float3 V = normalize(view_position.xyz - position);
 
     // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0
     // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)
-    vec3 F0 = mix(vec3(0.04), albedo, metallic);
+    float3 F0 = mix(float3(0.04, 0.04, 0.04), albedo, metallic);
 
-    vec3 Lo = vec3(0.0);
-    for (int i = 0; i < MAX_LIGHT_COUNT; ++i)
+    // reflectance equation
+    float3 Lo = float3(0.0, 0.0, 0.0);
+    for(int i = 0; i < MAX_LIGHT_COUNT; ++i)
     {
-        // calculate per-light radiance
-        vec3 delta = u_lights[i].position - position;
-        vec3 L = normalize(delta);
-        vec3 H = normalize(V + L);
+        float3 delta = g_lights[i].position.xyz - position;
+        float3 L = normalize(delta);
+        float3 H = normalize(V + L);
         float distance = length(delta);
-        float attenuation = 1.0 / (distance * distance);
-        vec3 radiance = u_lights[i].color * attenuation;
+        float attenuation  = 1.0 / (distance * distance);
+        float3 radiance = g_lights[i].color.rgb * attenuation;
 
         // Cook-Torracne BRDF
         float NDF = DistributionGGX(N, H, roughness);
         float G = GeometrySmith(N, V, L, roughness);
-        vec3 F = FresnelSchlick(clamp(dot(H, V), 0.0, 1.0), F0);
+        float3 F = FresnelSchlick(clamp(dot(H, V), 0.0, 1.0), F0);
 
-        vec3 nom = NDF * G * F;
+        float3 nom = NDF * G * F;
         float NdotV = max(dot(N, V), 0.0);
         float NdotL = max(dot(N, L), 0.0);
         float denom = 4.0 * NdotV * NdotV;
-        vec3 specular = nom / max(denom, 0.001); // prevent devide by 0
+        float3 specular = nom / max(denom, 0.001); // prevent devide by 0
 
         // kS is equal to Fresnel
-        vec3 kS = F;
+        float3 kS = F;
         // for energy conservation, the diffuse and specular light can't
         // be above 1.0 (unless the surface emits light); to preserve this
         // relationship the diffuse component (kD) should equal 1.0 - kS.
-        vec3 kD = vec3(1.0) - kS;
+        float3 kD = float3(1.0, 1.0, 1.0) - kS;
         // multiply kD by the inverse metalness such that only non-metals
         // have diffuse lighting, or a linear blend if partly metal (pure metals
         // have no diffuse light).
@@ -122,13 +126,15 @@ void main()
         Lo += (kD * albedo / PI + specular) * radiance * NdotL;
     }
 
-    vec3 ambient = vec3(0.03) * albedo * ao;
-    vec3 color = ambient + Lo;
+    float3 ambient = float3(0.03, 0.03, 0.03) * albedo * ao;
+    float3 color = ambient + Lo;
 
     // HDR tonemapping
-    color = color / (color + vec3(1.0));
+    color = color / (color + float3(1.0, 1.0, 1.0));
     // gamma correction
-    color = pow(color, vec3(1.0 / 2.2));
+    float s = 1.0 / 2.2;
+    color = pow(color, float3(s, s, s));
 
-    out_color = vec4(color, 1.0);
+    return float4(color, 1.0);
 }
+
