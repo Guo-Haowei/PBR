@@ -21,7 +21,7 @@ private:
     void createRenderTarget(const Extent2i& extent);
     void cleanupRenderTarget();
     void compileShaders();
-    void createSphereBuffers();
+    void createGeometries();
 private:
     const Window*                   m_pWindow;
     HWND                            m_hwnd;
@@ -36,22 +36,29 @@ private:
     ComPtr<ID3D11RenderTargetView>  m_immediateRenderTarget;
     ComPtr<ID3D11DepthStencilView>  m_immediateDepthStencil;
     // shaders
-    ComPtr<ID3D11VertexShader>      m_vert;
-    ComPtr<ID3D11PixelShader>       m_pixel;
-    ComPtr<ID3DBlob>                m_vertBlob;
+    ComPtr<ID3D11VertexShader>      m_pbrVert;
+    ComPtr<ID3D11PixelShader>       m_pbrPixel;
+    ComPtr<ID3D11VertexShader>      m_cubeVert;
+    ComPtr<ID3D11PixelShader>       m_cubePixel;
+    ComPtr<ID3DBlob>                m_pbrVertShaderBlob;
+    ComPtr<ID3DBlob>                m_cubeVertShaderBlob;
     // input
-    ComPtr<ID3D11InputLayout>       m_inputLayout;
     ComPtr<ID3D11Buffer>            m_constantBuffer;
     // buffers
     PerFrameBuffer                  m_perFrameBuffer;
     PerDrawBuffer                   m_perDrawBuffer;
     LightBuffer                     m_lightBuffer;
     ViewPositionBuffer              m_viewPositionBuffer;
+    ComPtr<ID3D11InputLayout>       m_cubeLayout;
+    PerDrawData                     m_cube;
+    ComPtr<ID3D11InputLayout>       m_sphereLayout;
+    PerDrawData                     m_sphere;
     // rasterizer
     ComPtr<ID3D11RasterizerState>   m_rasterizer;
-    PerDrawData                     m_sphere;
     // reverse depth
     ComPtr<ID3D11DepthStencilState> m_depthStencilState;
+    // textures
+    unique_ptr<Texture2D>           m_hdrTexture;
 };
 
 } } // namespace pbr::d3d11

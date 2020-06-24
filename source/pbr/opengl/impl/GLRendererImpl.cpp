@@ -99,10 +99,10 @@ void GLRendererImpl::PrepareGpuResources()
     createGeometries();
     // glBindVertexArray(0);
 
-    // hdr texture
     // load enviroment map
     auto image = utility::ReadHDRImage(DATA_DIR "hdr/ballroom.hdr");
     m_hdrTexture = CreateHDRTexture(image);
+    free(image.buffer.pData);
 }
 
 // shaders

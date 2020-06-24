@@ -48,8 +48,7 @@ namespace pbr {
     std::cout << "[Log] compiling shader " << shader << std::endl;
 
 #define SHADER_COMPILING_END_INFO(shader) \
-    std::cout << "[Log] shader " << shader << " compiled successfully\n"; \
-    std::cout << "--------------------------------------------" << std::endl;
+    std::cout << "[Log] shader " << shader << " compiled successfully" << std::endl;
 #else
 #define SHADER_COMPILING_START_INFO(shader)
 #define SHADER_COMPILING_END_INFO(shader)
