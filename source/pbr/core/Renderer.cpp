@@ -5,6 +5,9 @@
 #if TARGET_PLATFORM == PLATFORM_WINDOWS
 #   include "direct3d/D3d11Renderer.h"
 #endif
+#if TARGET_PLATFORM == PLATFORM_MACOS
+#   include "metal/MtRenderer.h"
+#endif
 #if TARGET_PLATFORM != PLATFORM_EMSCRIPTEN
 #   include "vulkan/VkRenderer.h"
 #endif
@@ -25,7 +28,7 @@ Renderer* Renderer::CreateRenderer(const Window* pWindow)
         case RenderApi::DIRECT3D11: return new d3d11::D3d11Renderer(pWindow);
 #endif
 #if TARGET_PLATFORM == PLATFORM_MACOS
-        case RenderApi::METAL: return nullptr;
+        case RenderApi::METAL: return new mt::MtRenderer(pWindow);
 #endif
 #if TARGET_PLATFORM != PLATFORM_EMSCRIPTEN
         case RenderApi::VULKAN: return new vk::VkRenderer(pWindow);

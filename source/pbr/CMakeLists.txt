@@ -20,6 +20,11 @@ IF (DIRECT3D11_RENDERER)
         ${CMAKE_CURRENT_SOURCE_DIR}/direct3d/D3d11Renderer.cpp)
 ENDIF ()
 
+IF (METAL_RENDERER)
+    ADD_SUBDIRECTORY(metal)
+    TARGET_LINK_LIBRARIES(pbr PRIVATE mtRenderer)
+ENDIF ()
+
 IF (VULKAN_RENDERER)
     MESSAGE ("************************************* Vulkan *************************************")
     FIND_PACKAGE(Vulkan REQUIRED FATAL_ERROR)

@@ -123,6 +123,11 @@ void Window::setWindowHintFromCreateInfo(const WindowCreateInfo& info)
             glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
             break;
 #endif
+#if TARGET_PLATFORM == PLATFORM_MACOS
+        case RenderApi::METAL:
+            glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+            break;
+#endif
 #if TARGET_PLATFORM != PLATFORM_EMSCRIPTEN
         case RenderApi::VULKAN:
             glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
