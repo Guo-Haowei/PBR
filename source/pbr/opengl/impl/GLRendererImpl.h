@@ -18,13 +18,16 @@ public:
     void Finalize();
 private:
     void compileShaders();
-    void uploadLightUniforms();
-    void createSphereBuffers();
-    void destroySphereBuffers();
+    void uploadConstantUniforms();
+    void createGeometries();
+    void clearGeometries();
 private:
-    const Window* m_pWindow;
-    GlslProgram m_pbrProgram;
-    PerDrawData m_sphere;
+    const Window*   m_pWindow;
+    GlslProgram     m_pbrProgram;
+    GlslProgram     m_envProgram;
+    PerDrawData     m_sphere;
+    PerDrawData     m_envMap;
+    GLTexture       m_hdrTexture;
 };
 
 } } // namespace pbr::gl

@@ -9,13 +9,6 @@ struct VertexPosColor
     vec3 in_color;
 };
 
-static const VertexPosColor g_triangle[] =
-{
-    { { 0.0f, 0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f } },
-    { { 0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f } },
-    { { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f } },
-};
-
 struct Vertex
 {
     vec3 position;
@@ -34,8 +27,14 @@ struct Mesh
     vector<uvec3>  indices;
 };
 
-extern Mesh createSphereMesh(float radius = 1.0f, uint32_t widthSegment = 32, uint32_t heightSegment = 32);
+struct Cube
+{
+    vector<vec3> vertices;
+    vector<uvec3>  indices;
+};
 
-static const Mesh g_sphere = createSphereMesh();
+extern Cube CreateCubeMesh(float scale = 1.0f);
+
+extern Mesh CreateSphereMesh(float radius = 1.0f, uint32_t widthSegment = 32, uint32_t heightSegment = 32);
 
 } // namespace pbr

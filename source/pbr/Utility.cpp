@@ -1,5 +1,7 @@
 #include "base/Error.h"
 #include "Utility.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 #include <fstream>
 #include <streambuf>
 using std::ifstream;
@@ -8,7 +10,7 @@ using std::ios;
 
 namespace pbr { namespace utility {
 
-string readAsciiFile(const char* path)
+string ReadAsciiFile(const char* path)
 {
     ifstream f(path);
     if (!f.good())
@@ -17,12 +19,12 @@ string readAsciiFile(const char* path)
     return string((istreambuf_iterator<char>(f)), istreambuf_iterator<char>());
 }
 
-string readAsciiFile(const string& path)
+string ReadAsciiFile(const string& path)
 {
-    return readAsciiFile(path.c_str());
+    return ReadAsciiFile(path.c_str());
 }
 
-vector<char> readBinaryFile(const char* path)
+vector<char> ReadBinaryFile(const char* path)
 {
     ifstream f(path, ios::ate | ios::binary);
     if (!f.good())
@@ -36,9 +38,27 @@ vector<char> readBinaryFile(const char* path)
     return buffer;
 }
 
-vector<char> readBinaryFile(const string& path)
+vector<char> ReadBinaryFile(const string& path)
 {
-    return readBinaryFile(path.c_str());
+    return ReadBinaryFile(path.c_str());
+}
+
+Image ReadHDRImage(const string& path)
+{
+    return ReadHDRImage(path.c_str());
+}
+
+Image ReadHDRImage(const char* path)
+{
+    Image image;
+    float* data = stbi_loadf(path, &image.width, &image.height, &image.component, 0);
+    if (!data)
+        THROW_EXCEPTION("filesystem: Failed to open image '" + string(path) + "'");
+
+    image.buffer.pData = data;
+    image.buffer.sizeInByte = sizeof(float) * image.width * image.height * image.component;
+    image.dataType = DataType::FLOAT_32T;
+    return image;
 }
 
 bool IsNaN(const mat4& m)

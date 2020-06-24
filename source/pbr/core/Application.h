@@ -2,6 +2,7 @@
 #include "Window.h"
 #include "Renderer.h"
 #include "Camera.h"
+#include "Utility.h"
 
 namespace pbr {
 

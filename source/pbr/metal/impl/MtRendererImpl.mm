@@ -66,8 +66,8 @@ void MtRendererImpl::Initialize()
     assert(g_renderPipelineState);
 
     // buffer
-    g_triangleBuffer = [g_device newBufferWithBytes:g_triangle length:sizeof(g_triangle) options:MTLCPUCacheModeWriteCombined];
-    assert(g_triangleBuffer);
+    // g_triangleBuffer = [g_device newBufferWithBytes:g_triangle length:sizeof(g_triangle) options:MTLCPUCacheModeWriteCombined];
+    // assert(g_triangleBuffer);
 
 }
 

@@ -3,6 +3,28 @@
 
 namespace pbr {
 
+    enum class DataType
+    {
+        UINT_8T,
+        UINT_16T,
+        UINT_32T,
+        FLOAT_32T,
+    };
+
+    struct Buffer
+    {
+        void* pData;
+        size_t sizeInByte;
+    };
+
+    struct Image
+    {
+        int width, height;
+        int component;
+        DataType dataType;
+        Buffer buffer;
+    };
+
     enum class RenderApi { UNKNOWN, OPENGL, DIRECT3D11, VULKAN, METAL };
 
     static const string& RenderApiToString(RenderApi api)

@@ -270,21 +270,22 @@ void D3d11RendererImpl::compileShaders()
 
 void D3d11RendererImpl::createSphereBuffers()
 {
-    m_sphere.indexCount = static_cast<uint32_t>(3 * g_sphere.indices.size());
+    const auto sphere = CreateSphereMesh();
+    m_sphere.indexCount = static_cast<uint32_t>(3 * sphere.indices.size());
 
     {
         // vertex buffer
         D3D11_BUFFER_DESC bufferDesc;
         ZeroMemory(&bufferDesc, sizeof(D3D11_BUFFER_DESC));
         bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-        bufferDesc.ByteWidth = static_cast<uint32_t>(sizeof(Vertex) * g_sphere.vertices.size());
+        bufferDesc.ByteWidth = static_cast<uint32_t>(sizeof(Vertex) * sphere.vertices.size());
         bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
         bufferDesc.CPUAccessFlags = 0;
         bufferDesc.MiscFlags = 0;
 
         D3D11_SUBRESOURCE_DATA data;
         ZeroMemory(&data, sizeof(D3D11_SUBRESOURCE_DATA));
-        data.pSysMem = g_sphere.vertices.data();
+        data.pSysMem = sphere.vertices.data();
         D3D_THROW_IF_FAILED(m_device->CreateBuffer(&bufferDesc, &data, m_sphere.vertexBuffer.GetAddressOf()),
             "Failed to create vertex buffer");
     }
@@ -293,14 +294,14 @@ void D3d11RendererImpl::createSphereBuffers()
         D3D11_BUFFER_DESC bufferDesc;
         ZeroMemory(&bufferDesc, sizeof(D3D11_BUFFER_DESC));
         bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-        bufferDesc.ByteWidth = static_cast<uint32_t>(sizeof(uvec3) * g_sphere.indices.size());
+        bufferDesc.ByteWidth = static_cast<uint32_t>(sizeof(uvec3) * sphere.indices.size());
         bufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
         bufferDesc.CPUAccessFlags = 0;
         bufferDesc.MiscFlags = 0;
 
         D3D11_SUBRESOURCE_DATA data;
         ZeroMemory(&data, sizeof(D3D11_SUBRESOURCE_DATA));
-        data.pSysMem = g_sphere.indices.data();
+        data.pSysMem = sphere.indices.data();
         D3D_THROW_IF_FAILED(m_device->CreateBuffer(&bufferDesc, &data, m_sphere.indexBuffer.GetAddressOf()),
             "Failed to create index buffer");
     }

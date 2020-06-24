@@ -84,7 +84,7 @@ void CameraController::Update(const Window* pWindow)
     const double scroll = pWindow->GetScroll();
     if (scroll != 0)
     {
-        float deltaZ = static_cast<float>(scroll) * 0.3f;
+        float deltaZ = static_cast<float>(scroll) * 0.6f;
         M = glm::translate(glm::mat4(1.0f), deltaZ * vec3(M[2])) * M;
         m_pCamera->m_dirty = true;
         return;

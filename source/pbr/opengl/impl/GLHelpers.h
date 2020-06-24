@@ -1,5 +1,6 @@
 #pragma once
 #include "GLPrerequisites.h"
+#include "base/Definitions.h"
 
 namespace pbr { namespace gl {
 
@@ -10,6 +11,14 @@ namespace pbr { namespace gl {
         uint32_t ebo = 0;
         uint32_t indexCount = 0;
     };
+
+    struct GLTexture
+    {
+        GLenum type;
+        GLuint handle;
+    };
+
+    GLTexture CreateHDRTexture(const Image& image);
 
     class GlslProgram
     {

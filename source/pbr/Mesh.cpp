@@ -2,7 +2,58 @@
 
 namespace pbr {
 
-Mesh createSphereMesh(float radius, uint32_t widthSegment, uint32_t heightSegment)
+Cube CreateCubeMesh(float scale)
+{
+    Cube cube;
+    /**
+     *        E__________________ H
+     *       /|                 /|
+     *      / |                / |
+     *     /  |               /  |
+     *   A/___|______________/D  |
+     *    |   |              |   |
+     *    |   |              |   |
+     *    |   |              |   |
+     *    |  F|______________|___|G
+     *    |  /               |  /
+     *    | /                | /
+     *   B|/_________________|C
+     *
+     */
+    enum VertexIndex { A = 0, B = 1, C = 2, D = 3, E = 4, F = 5, G = 6, H = 7 };
+
+    cube.vertices = {
+        { -scale, +scale, +scale }, // A
+        { -scale, -scale, +scale }, // B
+        { +scale, -scale, +scale }, // C
+        { +scale, +scale, +scale }, // D
+        { -scale, +scale, -scale }, // E
+        { -scale, -scale, -scale }, // F
+        { +scale, -scale, -scale }, // G
+        { +scale, +scale, -scale }  // H
+    };
+
+    cube.indices = {
+        uvec3(A, B, D), // ABD
+        uvec3(D, B, C), // DBC
+        uvec3(E, H, F), // EHF
+        uvec3(H, G, F), // HGF
+
+        uvec3(D, C, G), // DCG
+        uvec3(D, G, H), // DGH
+        uvec3(A, F, B), // AFB
+        uvec3(A, E, F), // AEF
+
+        uvec3(A, D, H), // ADH
+        uvec3(A, H, E), // AHE
+        uvec3(B, F, G), // BFG
+        uvec3(B, G, C), // BGC
+    };
+
+    return cube;
+}
+
+Mesh CreateSphereMesh(float radius, uint32_t widthSegment, uint32_t heightSegment)
 {
     Mesh sphere;
 
