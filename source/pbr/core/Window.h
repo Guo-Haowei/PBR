@@ -39,6 +39,7 @@ private:
     void setWindowHintFromCreateInfo(const WindowCreateInfo& info);
 
     static void mouseButtonCallback(GLFWwindow* glfwWindow, int button, int action, int mode);
+    static void keyCallback(GLFWwindow* glfwWindow, int key, int scan, int action, int mode);
     static void mouseScrollCallback(GLFWwindow* glfwWindow, double x, double y);
     static void mouseCursorCallback(GLFWwindow* glfwWindow, double x, double y);
 private:

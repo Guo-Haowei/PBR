@@ -43,6 +43,7 @@ void Window::Initialize(const WindowCreateInfo& info)
     glfwSetMouseButtonCallback(m_pWindow, Window::mouseButtonCallback);
     glfwSetScrollCallback(m_pWindow, Window::mouseScrollCallback);
     glfwSetCursorPosCallback(m_pWindow, Window::mouseCursorCallback);
+    glfwSetKeyCallback(m_pWindow, Window::keyCallback);
 
     if (m_renderApi == RenderApi::OPENGL)
         glfwMakeContextCurrent(m_pWindow);
@@ -160,6 +161,13 @@ void Window::mouseCursorCallback(GLFWwindow* glfwWindow, double x, double y)
 {
     Window* window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(glfwWindow));
     window->m_thisFrameCursorPos = vec2(x, y);
+}
+
+void Window::keyCallback(GLFWwindow* glfwWindow, int key, int scan, int action, int mode)
+{
+    // Window* window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(glfwWindow));
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
+        glfwSetWindowShouldClose(glfwWindow, true);
 }
 
 } // namespace pbr
