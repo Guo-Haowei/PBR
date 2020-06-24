@@ -8,9 +8,9 @@
 #if TARGET_PLATFORM == PLATFORM_MACOS
 #   include "metal/MtRenderer.h"
 #endif
-#if TARGET_PLATFORM != PLATFORM_EMSCRIPTEN
-#   include "vulkan/VkRenderer.h"
-#endif
+// #if TARGET_PLATFORM != PLATFORM_EMSCRIPTEN
+// #   include "vulkan/VkRenderer.h"
+// #endif
 
 namespace pbr {
 
@@ -31,7 +31,7 @@ Renderer* Renderer::CreateRenderer(const Window* pWindow)
         case RenderApi::METAL: return new mt::MtRenderer(pWindow);
 #endif
 #if TARGET_PLATFORM != PLATFORM_EMSCRIPTEN
-        case RenderApi::VULKAN: return new vk::VkRenderer(pWindow);
+        // case RenderApi::VULKAN: return new vk::VkRenderer(pWindow);
 #endif
         default: assert(0);
     }

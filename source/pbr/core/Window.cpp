@@ -1,6 +1,7 @@
-#include "base/Error.h"
 #include "Window.h"
+#include "base/Error.h"
 #include "Application.h"
+#include <GLFW/glfw3.h>
 
 namespace pbr {
 

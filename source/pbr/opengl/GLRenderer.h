@@ -1,8 +1,10 @@
 #pragma once
+#include "base/Prerequisites.h"
 #include "core/Renderer.h"
-#include "GLHelpers.h"
 
 namespace pbr { namespace gl {
+
+class GLRendererImpl;
 
 class GLRenderer : public Renderer
 {
@@ -15,13 +17,7 @@ public:
     virtual void Resize(const Extent2i& extent) override;
     virtual void Finalize() override;
 private:
-    void compileShaders();
-    void uploadLightUniforms();
-    void createSphereBuffers();
-    void destroySphereBuffers();
-private:
-    GlslProgram m_pbrProgram;
-    PerDrawData m_sphere;
+    unique_ptr<GLRendererImpl> impl;
 };
 
 } } // namespace pbr::gl

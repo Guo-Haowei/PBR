@@ -3,11 +3,14 @@
 #include "base/Platform.h"
 #include <string>
 
+struct GLFWwindow;
+
 namespace pbr {
 
 class Window
 {
 public:
+    enum { BUTTON_LEFT = 0 }; // TODO: check with glfw
     void Initialize(const WindowCreateInfo& info);
     void Finalize();
     bool ShouldClose() const;

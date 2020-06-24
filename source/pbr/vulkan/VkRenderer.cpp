@@ -2,6 +2,7 @@
 #include "VkRenderer.h"
 #include "VkDebug.h"
 #include "Utility.h"
+#include "base/private/include_glfw_vulkan.h"
 
 namespace pbr { namespace vk {
 

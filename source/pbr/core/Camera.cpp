@@ -103,7 +103,7 @@ void CameraController::Update(const Window* pWindow)
     vec3 p0, p1;
     bool p0InTrackball = virtualPoint(windowExtent, lastFrameCursorPos, p0);
     bool p1InTrackball = virtualPoint(windowExtent, thisFrameCursorPos, p1);
-    if (pWindow->IsButtonDown(GLFW_MOUSE_BUTTON_LEFT))
+    if (pWindow->IsButtonDown(Window::BUTTON_LEFT))
     {
         // trackball rotation
         if (p0InTrackball && p1InTrackball)

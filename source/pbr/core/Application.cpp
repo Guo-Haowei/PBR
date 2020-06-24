@@ -2,7 +2,9 @@
 #include "base/Platform.h"
 #include "base/Config.h"
 #include "glm/gtc/matrix_transform.hpp"
-
+#if TARGET_PLATFORM == PLATFORM_EMSCRIPTEN
+#   include <emscripten.h>
+#endif
 namespace pbr {
 
 static void mainloop()
