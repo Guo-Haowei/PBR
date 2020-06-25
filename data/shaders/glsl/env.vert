@@ -14,8 +14,7 @@ uniform PerFrameBuffer u_per_frame;
 void main()
 {
     pass_position = in_position;
-    float scale = 20.0f;
-    vec4 world_position = vec4(scale * in_position, 1.0);
+    vec4 world_position = vec4(in_position, 1.0);
     gl_Position = u_per_frame.projection * u_per_frame.view * world_position;
 }
 

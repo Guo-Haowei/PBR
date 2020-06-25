@@ -10,13 +10,14 @@ namespace pbr {
     public:
         Camera(float fov = QuarterPi, float aspect = 1.0f, float zNear = 0.1f, float zFar = 100.0f);
         inline const vec4& GetViewPos() const { return m_transform[3]; }
+        static mat4 ViewMatrix(const mat4& transform);
         mat4 ViewMatrix() const;
         mat4 ProjectionMatrixD3d() const;
         mat4 ProjectionMatrixGl() const;
         inline void SetTransformation(const mat4& transform) { m_transform = transform; m_dirty = true; }
         inline void SetAspect(float aspect) { m_aspect = aspect; m_dirty = true; }
         inline bool IsDirty() const { return m_dirty; }
-    private:
+    protected:
         mat4    m_transform;
         float   m_fov;
         float   m_aspect;
@@ -25,6 +26,13 @@ namespace pbr {
         bool    m_dirty;
 
         friend class CameraController;
+    };
+
+    class CubeCamera : public Camera
+    {
+    public:
+        using Camera::Camera;
+        void ViewMatricesGl(array<mat4, 6>& inMatrices) const;
     };
 
     class CameraController

@@ -21,13 +21,16 @@ private:
     void uploadConstantUniforms();
     void createGeometries();
     void clearGeometries();
+    void createCubeMapTexture();
 private:
     const Window*   m_pWindow;
     GlslProgram     m_pbrProgram;
     GlslProgram     m_envProgram;
+    GlslProgram     m_backgroundProgram;
     PerDrawData     m_sphere;
-    PerDrawData     m_envMap;
+    PerDrawData     m_cube;
     GLTexture       m_hdrTexture;
+    GLTexture       m_cubeMapTexture;
 };
 
 } } // namespace pbr::gl

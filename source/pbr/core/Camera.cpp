@@ -9,16 +9,21 @@ Camera::Camera(float fov, float aspect, float zNear, float zFar)
 {
 }
 
-mat4 Camera::ViewMatrix() const
+mat4 Camera::ViewMatrix(const mat4& transform)
 {
-    const vec4& position = m_transform[3];
-    const vec4& u = m_transform[0];
-    const vec4& v = m_transform[1];
-    const vec4& w = m_transform[2];
+    const vec4& position = transform[3];
+    const vec4& u = transform[0];
+    const vec4& v = transform[1];
+    const vec4& w = transform[2];
     const vec3 eye(position);
     const vec3 center(position - w);
     const vec3 up(v);
     return glm::lookAtRH(eye, center, up);
+}
+
+mat4 Camera::ViewMatrix() const
+{
+    return Camera::ViewMatrix(m_transform);
 }
 
 mat4 Camera::ProjectionMatrixD3d() const
@@ -31,6 +36,20 @@ mat4 Camera::ProjectionMatrixD3d() const
 mat4 Camera::ProjectionMatrixGl() const
 {
     return glm::perspective(m_fov, m_aspect, m_zNear, m_zFar);
+}
+
+void CubeCamera::ViewMatricesGl(array<mat4, 6>& inMatrices) const
+{
+    // front
+    const mat4 identity(1.0f);
+    inMatrices = {
+        glm::lookAt(vec3(0, 0, 0), vec3( 1,  0,  0), vec3(0, -1,  0)),
+        glm::lookAt(vec3(0, 0, 0), vec3(-1,  0,  0), vec3(0, -1,  0)),
+        glm::lookAt(vec3(0, 0, 0), vec3( 0,  1,  0), vec3(0,  0,  1)),
+        glm::lookAt(vec3(0, 0, 0), vec3( 0, -1,  0), vec3(0,  0, -1)),
+        glm::lookAt(vec3(0, 0, 0), vec3( 0,  0,  1), vec3(0, -1,  0)),
+        glm::lookAt(vec3(0, 0, 0), vec3( 0,  0, -1), vec3(0, -1,  0)),
+    };
 }
 
 CameraController::CameraController(Camera* pCamera)

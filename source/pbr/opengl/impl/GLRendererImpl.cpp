@@ -38,6 +38,7 @@ void GLRendererImpl::Initialize()
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glFrontFace(GL_CW);
+    glDepthFunc(GL_LEQUAL);
 }
 
 void GLRendererImpl::DumpGraphicsCardInfo()
@@ -67,15 +68,19 @@ void GLRendererImpl::Render(const Camera& camera)
     glDrawElementsInstanced(GL_TRIANGLES, m_sphere.indexCount, GL_UNSIGNED_INT, 0, size * size);
 
     // draw cube map
-    m_envProgram.use();
+    m_backgroundProgram.use();
     if (camera.IsDirty())
     {
-        m_envProgram.setUniform("u_per_frame.view", camera.ViewMatrix());
-        m_envProgram.setUniform("u_per_frame.projection", camera.ProjectionMatrixGl());
+        m_backgroundProgram.setUniform("u_per_frame.view", camera.ViewMatrix());
+        m_backgroundProgram.setUniform("u_per_frame.projection", camera.ProjectionMatrixGl());
     }
 
-    glBindVertexArray(m_envMap.vao);
-    glDrawElements(GL_TRIANGLES, m_envMap.indexCount, GL_UNSIGNED_INT, 0);
+    m_backgroundProgram.setUniform("u_env_map", 1);
+    glBindTexture(m_cubeMapTexture.type, m_cubeMapTexture.handle);
+    glActiveTexture(GL_TEXTURE1);
+
+    glBindVertexArray(m_cube.vao);
+    glDrawElements(GL_TRIANGLES, m_cube.indexCount, GL_UNSIGNED_INT, 0);
 }
 
 void GLRendererImpl::Resize(const Extent2i& extent)
@@ -100,19 +105,58 @@ void GLRendererImpl::PrepareGpuResources()
     // glBindVertexArray(0);
 
     // load enviroment map
-    auto image = utility::ReadHDRImage(DATA_DIR "hdr/ballroom.hdr");
+    auto image = utility::ReadHDRImage(DEFAULT_HDR_ENV_MAP);
     m_hdrTexture = CreateHDRTexture(image);
     free(image.buffer.pData);
+
+    createCubeMapTexture();
+}
+
+void GLRendererImpl::createCubeMapTexture()
+{
+    const int cubeTextureSize = 512;
+    GLuint captureFbo, captureRbo;
+    glGenFramebuffers(1, &captureFbo);
+    glGenRenderbuffers(1, &captureRbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, captureFbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, captureRbo);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, cubeTextureSize, cubeTextureSize);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, captureRbo);
+
+    m_cubeMapTexture = CreateEmptyCubeMap(cubeTextureSize);
+
+    CubeCamera cubeCamera(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+    mat4 projection = cubeCamera.ProjectionMatrixGl();
+    array<mat4, 6> viewMatrices;
+    cubeCamera.ViewMatricesGl(viewMatrices);
+
+    glViewport(0, 0, cubeTextureSize, cubeTextureSize);
+    m_envProgram.use();
+    m_envProgram.setUniform("u_env_map", 0);
+    m_envProgram.setUniform("u_per_frame.projection", projection);
+    for (int i = 0; i < 6; ++i)
+    {
+        m_envProgram.setUniform("u_per_frame.view", viewMatrices[i]);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, m_cubeMapTexture.handle, 0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glBindVertexArray(m_cube.vao);
+        glDrawElements(GL_TRIANGLES, m_cube.indexCount, GL_UNSIGNED_INT, 0);
+    }
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 // shaders
-#define PBR_VERT "pbr.vert"
-#define PBR_FRAG "pbr.frag"
-#define ENV_VERT "env.vert"
-#define ENV_FRAG "env.frag"
+#define PBR_VERT    "pbr.vert"
+#define PBR_FRAG    "pbr.frag"
+#define ENV_VERT    "env.vert"
+#define ENV_FRAG    "env.frag"
+#define BG_VERT     "background.vert"
+#define BG_FRAG     "background.frag"
 
 void GLRendererImpl::compileShaders()
 {
+    // pbr
     {
 #if TARGET_PLATFORM == PLATFORM_EMSCRIPTEN
         string vertSource = string(generated::pbr_vert_c_str);
@@ -128,10 +172,8 @@ void GLRendererImpl::compileShaders()
         GLuint fragmentShaderHandle = GlslProgram::createShaderFromString(fragSource, GL_FRAGMENT_SHADER);
         SHADER_COMPILING_END_INFO(PBR_FRAG);
         m_pbrProgram = GlslProgram::create(vertexShaderHandle, fragmentShaderHandle);
-
-        // upload constant buffers
-        uploadConstantUniforms();
     }
+    // environment
     {
 #if TARGET_PLATFORM == PLATFORM_EMSCRIPTEN
         string vertSource = string(generated::env_vert_c_str);
@@ -148,6 +190,26 @@ void GLRendererImpl::compileShaders()
         SHADER_COMPILING_END_INFO(ENV_FRAG);
         m_envProgram = GlslProgram::create(vertexShaderHandle, fragmentShaderHandle);
     }
+    // background
+    {
+#if TARGET_PLATFORM == PLATFORM_EMSCRIPTEN
+        string vertSource = string(generated::background_vert_c_str);
+        string fragSource = string(generated::background_frag_c_str);
+#else
+        string vertSource = utility::ReadAsciiFile(GLSL_DIR BG_VERT);
+        string fragSource = utility::ReadAsciiFile(GLSL_DIR BG_FRAG);
+#endif
+        SHADER_COMPILING_START_INFO(BG_VERT);
+        GLuint vertexShaderHandle = GlslProgram::createShaderFromString(vertSource, GL_VERTEX_SHADER);
+        SHADER_COMPILING_END_INFO(BG_VERT);
+        SHADER_COMPILING_START_INFO(BG_FRAG);
+        GLuint fragmentShaderHandle = GlslProgram::createShaderFromString(fragSource, GL_FRAGMENT_SHADER);
+        SHADER_COMPILING_END_INFO(BG_FRAG);
+        m_backgroundProgram = GlslProgram::create(vertexShaderHandle, fragmentShaderHandle);
+    }
+
+    // upload constant buffers
+    uploadConstantUniforms();
 }
 
 void GLRendererImpl::createGeometries()
@@ -174,14 +236,14 @@ void GLRendererImpl::createGeometries()
     {
         // cube
         const auto cube = CreateCubeMesh(1.0f);
-        m_envMap.indexCount = static_cast<uint32_t>(3 * cube.indices.size());
-        glGenVertexArrays(1, &m_envMap.vao);
-        glBindVertexArray(m_envMap.vao);
-        glGenBuffers(2, &m_envMap.vbo);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_envMap.ebo);
+        m_cube.indexCount = static_cast<uint32_t>(3 * cube.indices.size());
+        glGenVertexArrays(1, &m_cube.vao);
+        glBindVertexArray(m_cube.vao);
+        glGenBuffers(2, &m_cube.vbo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_cube.ebo);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, cube.indices.size() * sizeof(uvec3), cube.indices.data(), GL_STATIC_DRAW);
         // vertices
-        glBindBuffer(GL_ARRAY_BUFFER, m_envMap.vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, m_cube.vbo);
         glBufferData(GL_ARRAY_BUFFER, cube.vertices.size() * sizeof(vec3), cube.vertices.data(), GL_STATIC_DRAW);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), 0);
         glEnableVertexAttribArray(0);

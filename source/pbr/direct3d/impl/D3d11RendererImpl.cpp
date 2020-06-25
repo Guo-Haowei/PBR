@@ -187,7 +187,7 @@ void D3d11RendererImpl::PrepareGpuResources()
     createGeometries();
 
     // hdr texture
-    auto image = utility::ReadHDRImage(DATA_DIR "hdr/ballroom.hdr");
+    auto image = utility::ReadHDRImage(DEFAULT_HDR_ENV_MAP);
     m_hdrTexture.reset(CreateHDRTexture(m_device, image));
 
     // constant buffer

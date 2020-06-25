@@ -18,7 +18,9 @@ namespace pbr { namespace gl {
         GLuint handle;
     };
 
-    GLTexture CreateHDRTexture(const Image& image);
+    extern GLTexture CreateHDRTexture(const Image& image);
+
+    extern GLTexture CreateEmptyCubeMap(int size);
 
     class GlslProgram
     {
