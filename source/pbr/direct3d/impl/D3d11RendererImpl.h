@@ -18,10 +18,13 @@ public:
 private:
     void createDevice();
     void createSwapchain();
-    void createRenderTarget(const Extent2i& extent);
-    void cleanupRenderTarget();
+    void createImmediateRenderTarget(const Extent2i& extent);
+    void createCubeMapRenderTarget(const Extent2i& extent);
+    void cleanupImmediateRenderTarget();
     void compileShaders();
     void createGeometries();
+    void setViewport(const Extent2i& extent);
+    void renderToEnvironmentMap();
 private:
     const Window*                   m_pWindow;
     HWND                            m_hwnd;
@@ -31,15 +34,16 @@ private:
     ComPtr<IDXGIAdapter>            m_dxgiAdapter;
     ComPtr<IDXGIFactory>            m_dxgiFactory;
     ComPtr<IDXGISwapChain>          m_swapChain;
-    // TODO: refactor
     // render target
-    ComPtr<ID3D11RenderTargetView>  m_immediateRenderTarget;
-    ComPtr<ID3D11DepthStencilView>  m_immediateDepthStencil;
+    ImmediateRenderTarget           m_immediate;
+    CubeMapRenderTarget             m_environment;
     // shaders
     ComPtr<ID3D11VertexShader>      m_pbrVert;
     ComPtr<ID3D11PixelShader>       m_pbrPixel;
-    ComPtr<ID3D11VertexShader>      m_cubeVert;
-    ComPtr<ID3D11PixelShader>       m_cubePixel;
+    ComPtr<ID3D11VertexShader>      m_envVert;
+    ComPtr<ID3D11PixelShader>       m_envPixel;
+    // ComPtr<ID3D11VertexShader>      m_cubeVert;
+    // ComPtr<ID3D11PixelShader>       m_cubePixel;
     ComPtr<ID3DBlob>                m_pbrVertShaderBlob;
     ComPtr<ID3DBlob>                m_cubeVertShaderBlob;
     // input

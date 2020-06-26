@@ -35,14 +35,6 @@ struct ViewPositionCache
 
 static_assert(sizeof(LightDataCache) == 4 * 2 * sizeof(vec4));
 
-static mat4& convertProjection(mat4& projection)
-{
-    // projection = mat4( { 1, 0, 0, 0 }, { 0, 1, 0, 0 }, { 0, 0, 1, 0 }, { 0, 0, 0.5, 1} ) *
-    //              mat4( { 1, 0, 0, 0 }, { 0, 1, 0, 0 }, { 0, 0, 0.5, 0 }, { 0, 0, 0, 1} ) *
-    //              projection;
-    return projection;
-}
-
 template<class Cache> class ConstantBuffer
 {
 public:
@@ -113,5 +105,20 @@ struct Texture2D
 };
 
 extern Texture2D* CreateHDRTexture(ComPtr<ID3D11Device>& device, const Image& image);
+
+struct ImmediateRenderTarget
+{
+    ComPtr<ID3D11RenderTargetView> rtv;
+    ComPtr<ID3D11DepthStencilView> dsv;
+};
+
+struct CubeMapRenderTarget
+{
+    array<ComPtr<ID3D11RenderTargetView>, 6>    rtvs;
+    ComPtr<ID3D11DepthStencilView>              dsv;
+    ComPtr<ID3D11ShaderResourceView>            srv;
+    ComPtr<ID3D11Texture2D>                     cubeBuffer;
+    ComPtr<ID3D11Texture2D>                     depthBuffer;
+};
 
 } } // namespace pbr::d3d11

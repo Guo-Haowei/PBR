@@ -16,7 +16,9 @@ namespace pbr {
         mat4 ProjectionMatrixGl() const;
         inline void SetTransformation(const mat4& transform) { m_transform = transform; m_dirty = true; }
         inline void SetAspect(float aspect) { m_aspect = aspect; m_dirty = true; }
+        inline void SetFov(float fov) { m_fov = fov; m_dirty = true; }
         inline bool IsDirty() const { return m_dirty; }
+        inline void MarkDirty() { m_dirty = true; }
     protected:
         mat4    m_transform;
         float   m_fov;

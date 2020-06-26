@@ -1,4 +1,5 @@
 #include "base/Error.h"
+#include "core/Renderer.h"
 #include "GLRendererImpl.h"
 #include "GLPrerequisites.h"
 #include "Utility.h"
@@ -114,7 +115,7 @@ void GLRendererImpl::PrepareGpuResources()
 
 void GLRendererImpl::createCubeMapTexture()
 {
-    const int cubeTextureSize = 512;
+    const int cubeTextureSize = Renderer::CubeMapRes;
     GLuint captureFbo, captureRbo;
     glGenFramebuffers(1, &captureFbo);
     glGenRenderbuffers(1, &captureRbo);

@@ -54,6 +54,7 @@ void Application::initialize()
     mat4 transform = glm::translate(mat4(1.0f), vec3(0.0f, 0.0f, 10.0f));
     m_camera.SetTransformation(transform);
     m_camera.SetAspect(-1.0f); // force update
+    m_camera.SetFov(glm::radians(60.0f));
     m_cameraController.SetCamera(&m_camera);
 }
 
@@ -62,6 +63,8 @@ void Application::Mainloop()
     m_window->PollEvents();
     // update camera
     m_cameraController.Update(m_window.get());
+    // TODO: remove this
+    m_camera.MarkDirty();
     m_renderer->Render(m_camera);
     m_window->SwapBuffers();
     m_window->PostUpdate();

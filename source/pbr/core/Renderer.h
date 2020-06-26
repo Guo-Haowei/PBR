@@ -10,6 +10,8 @@ class Camera;
 class Renderer
 {
 public:
+    static constexpr int CubeMapRes = 512;
+
     static Renderer* CreateRenderer(const Window* pWindow);
     virtual void Initialize() = 0;
     virtual void DumpGraphicsCardInfo() = 0;
