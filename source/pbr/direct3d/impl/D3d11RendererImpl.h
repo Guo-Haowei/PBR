@@ -42,8 +42,8 @@ private:
     ComPtr<ID3D11PixelShader>       m_pbrPixel;
     ComPtr<ID3D11VertexShader>      m_envVert;
     ComPtr<ID3D11PixelShader>       m_envPixel;
-    // ComPtr<ID3D11VertexShader>      m_cubeVert;
-    // ComPtr<ID3D11PixelShader>       m_cubePixel;
+    ComPtr<ID3D11VertexShader>      m_backgroundVert;
+    ComPtr<ID3D11PixelShader>       m_backgroundPixel;
     ComPtr<ID3DBlob>                m_pbrVertShaderBlob;
     ComPtr<ID3DBlob>                m_cubeVertShaderBlob;
     // input

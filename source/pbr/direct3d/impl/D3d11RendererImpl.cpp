@@ -35,7 +35,6 @@ void D3d11RendererImpl::Finalize()
 
 void D3d11RendererImpl::Render(const Camera& camera)
 {
-    renderToEnvironmentMap();
     // set render target
     m_deviceContext->OMSetRenderTargets(1, m_immediate.rtv.GetAddressOf(), m_immediate.dsv.Get());
     // set viewport
@@ -44,7 +43,6 @@ void D3d11RendererImpl::Render(const Camera& camera)
     m_deviceContext->ClearRenderTargetView(m_immediate.rtv.Get(), clearColor);
     m_deviceContext->ClearDepthStencilView(m_immediate.dsv.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
     // set primitive topology
-    m_deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
     // update shared constant buffer
     if (camera.IsDirty())
@@ -78,18 +76,17 @@ void D3d11RendererImpl::Render(const Camera& camera)
         // draw
         m_deviceContext->DrawIndexedInstanced(m_sphere.indexCount, size * size, 0, 0, 0);
     }
-#if 0
     // draw cube
     {
         // set shader
-        m_deviceContext->VSSetShader(m_cubeVert.Get(), NULL, 0);
-        m_deviceContext->PSSetShader(m_cubePixel.Get(), NULL, 0);
-        m_deviceContext->PSSetShaderResources(0, 1, m_hdrTexture->m_shaderResourceView.GetAddressOf());
+        m_deviceContext->VSSetShader(m_backgroundVert.Get(), NULL, 0);
+        m_deviceContext->PSSetShader(m_backgroundPixel.Get(), NULL, 0);
+        m_deviceContext->PSSetShaderResources(0, 1, m_environment.srv.GetAddressOf());
         m_deviceContext->PSSetSamplers(0, 1, m_hdrTexture->m_sampler.GetAddressOf());
         if (camera.IsDirty())
         {
             m_perFrameBuffer.VSSet(m_deviceContext, 1);
-            // m_viewPositionBuffer.PSSet(m_deviceContext, 1);
+            m_viewPositionBuffer.PSSet(m_deviceContext, 1);
         }
         // set input layout
         m_deviceContext->IASetInputLayout(m_cubeLayout.Get());
@@ -101,7 +98,6 @@ void D3d11RendererImpl::Render(const Camera& camera)
         // draw
         m_deviceContext->DrawIndexed(m_cube.indexCount, 0, 0);
     }
-#endif
     // present
     m_swapChain->Present(1, 0); // vsync
     // m_swapChain->Present(0, 0);
@@ -217,6 +213,24 @@ void D3d11RendererImpl::PrepareGpuResources()
         // m_device->CreateRasterizerState(&desc, m_rasterizer.GetAddressOf());
         // m_deviceContext->RSSetState(m_rasterizer.Get());
     }
+
+    // set depth function to less equal
+    {
+        D3D11_DEPTH_STENCIL_DESC dsDesc {};
+        dsDesc.DepthEnable = true;
+        dsDesc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
+        dsDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+        dsDesc.StencilEnable = false;
+
+        D3D_THROW_IF_FAILED(m_device->CreateDepthStencilState(&dsDesc, m_depthStencilState.GetAddressOf()),
+            "Failed to create depth stencil state");
+
+        m_deviceContext->OMSetDepthStencilState(m_depthStencilState.Get(), 1);
+    }
+
+    m_deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    // render environment map once gpu resources are ready
+    renderToEnvironmentMap();
 }
 
 void D3d11RendererImpl::Resize(const Extent2i& extent)
@@ -323,9 +337,9 @@ void D3d11RendererImpl::renderToEnvironmentMap()
     m_deviceContext->PSSetSamplers(0, 1, m_hdrTexture->m_sampler.GetAddressOf());
 
     CubeCamera camera(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
-    m_perFrameBuffer.m_cache.projection = camera.ProjectionMatrixGl();
+    m_perFrameBuffer.m_cache.projection = camera.ProjectionMatrixD3d();
     array<mat4, 6> viewMatrices;
-    camera.ViewMatricesGl(viewMatrices);
+    camera.ViewMatricesD3d(viewMatrices);
 
     for (int i = 0; i < 6; ++i)
     {
@@ -356,6 +370,8 @@ void D3d11RendererImpl::cleanupImmediateRenderTarget()
 #define PBR_PIXEL_SHADER "pbr.pixel.hlsl"
 #define ENV_VERT_SHADER "env.vert.hlsl"
 #define ENV_PIXEL_SHADER "env.pixel.hlsl"
+#define BG_VERT_SHADER "background.vert.hlsl"
+#define BG_PIXEL_SHADER "background.pixel.hlsl"
 
 void D3d11RendererImpl::compileShaders()
 {
@@ -382,7 +398,7 @@ void D3d11RendererImpl::compileShaders()
         SHADER_COMPILING_END_INFO(PBR_PIXEL_SHADER);
     }
     {
-        // environment visualization
+        // environment mapping
         SHADER_COMPILING_START_INFO(ENV_VERT_SHADER);
         HlslShader::CompileShader(HLSL_DIR ENV_VERT_SHADER, "vs_main", "vs_5_0", m_cubeVertShaderBlob);
         HRESULT hr = m_device->CreateVertexShader(
@@ -402,6 +418,29 @@ void D3d11RendererImpl::compileShaders()
             m_envPixel.GetAddressOf());
         D3D_THROW_IF_FAILED(hr, "Failed to create pixel shader");
         SHADER_COMPILING_END_INFO(ENV_PIXEL_SHADER);
+    }
+    {
+        // background visualization
+        SHADER_COMPILING_START_INFO(BG_VERT_SHADER);
+        ComPtr<ID3DBlob> vertBlob;
+        HlslShader::CompileShader(HLSL_DIR BG_VERT_SHADER, "vs_main", "vs_5_0", vertBlob);
+        HRESULT hr = m_device->CreateVertexShader(
+            vertBlob->GetBufferPointer(),
+            vertBlob->GetBufferSize(),
+            NULL,
+            m_backgroundVert.GetAddressOf());
+        D3D_THROW_IF_FAILED(hr, "Failed to create vertex shader");
+        SHADER_COMPILING_END_INFO(BG_VERT_SHADER);
+        SHADER_COMPILING_START_INFO(BG_PIXEL_SHADER);
+        ComPtr<ID3DBlob> pixelBlob;
+        HlslShader::CompileShader(HLSL_DIR BG_PIXEL_SHADER, "ps_main", "ps_5_0", pixelBlob);
+        hr = m_device->CreatePixelShader(
+            pixelBlob->GetBufferPointer(),
+            pixelBlob->GetBufferSize(),
+            NULL,
+            m_backgroundPixel.GetAddressOf());
+        D3D_THROW_IF_FAILED(hr, "Failed to create pixel shader");
+        SHADER_COMPILING_END_INFO(BG_PIXEL_SHADER);
     }
 }
 

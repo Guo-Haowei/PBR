@@ -35,6 +35,7 @@ namespace pbr {
     public:
         using Camera::Camera;
         void ViewMatricesGl(array<mat4, 6>& inMatrices) const;
+        void ViewMatricesD3d(array<mat4, 6>& inMatrices) const;
     };
 
     class CameraController

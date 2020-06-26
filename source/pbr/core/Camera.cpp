@@ -40,15 +40,25 @@ mat4 Camera::ProjectionMatrixGl() const
 
 void CubeCamera::ViewMatricesGl(array<mat4, 6>& inMatrices) const
 {
-    // front
-    const mat4 identity(1.0f);
     inMatrices = {
-        glm::lookAt(vec3(0, 0, 0), vec3( 1,  0,  0), vec3(0, -1,  0)),
-        glm::lookAt(vec3(0, 0, 0), vec3(-1,  0,  0), vec3(0, -1,  0)),
-        glm::lookAt(vec3(0, 0, 0), vec3( 0,  1,  0), vec3(0,  0,  1)),
-        glm::lookAt(vec3(0, 0, 0), vec3( 0, -1,  0), vec3(0,  0, -1)),
-        glm::lookAt(vec3(0, 0, 0), vec3( 0,  0,  1), vec3(0, -1,  0)),
-        glm::lookAt(vec3(0, 0, 0), vec3( 0,  0, -1), vec3(0, -1,  0)),
+        glm::lookAt(vec3(0), vec3( 1,  0,  0), vec3(0, -1,  0)),
+        glm::lookAt(vec3(0), vec3(-1,  0,  0), vec3(0, -1,  0)),
+        glm::lookAt(vec3(0), vec3( 0,  1,  0), vec3(0,  0,  1)),
+        glm::lookAt(vec3(0), vec3( 0, -1,  0), vec3(0,  0, -1)),
+        glm::lookAt(vec3(0), vec3( 0,  0,  1), vec3(0, -1,  0)),
+        glm::lookAt(vec3(0), vec3( 0,  0, -1), vec3(0, -1,  0)),
+    };
+}
+
+void CubeCamera::ViewMatricesD3d(array<mat4, 6>& inMatrices) const
+{
+    inMatrices = {
+        glm::lookAt(vec3(0), vec3( 1,  0,  0), vec3(0, -1,  0)), // right
+        glm::lookAt(vec3(0), vec3(-1,  0,  0), vec3(0, -1,  0)),
+        glm::lookAt(vec3(0), vec3( 0, -1,  0), vec3(0,  0, -1)),
+        glm::lookAt(vec3(0), vec3( 0,  1,  0), vec3(0,  0,  1)),
+        glm::lookAt(vec3(0), vec3( 0,  0,  1), vec3(0, -1,  0)),
+        glm::lookAt(vec3(0), vec3( 0,  0, -1), vec3(0, -1,  0)),
     };
 }
 
