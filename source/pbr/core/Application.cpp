@@ -61,10 +61,7 @@ void Application::initialize()
 void Application::Mainloop()
 {
     m_window->PollEvents();
-    // update camera
     m_cameraController.Update(m_window.get());
-    // TODO: remove this
-    m_camera.MarkDirty();
     m_renderer->Render(m_camera);
     m_window->SwapBuffers();
     m_window->PostUpdate();

@@ -25,6 +25,8 @@ private:
     void createGeometries();
     void setViewport(const Extent2i& extent);
     void renderToEnvironmentMap();
+    void renderCube();
+    void renderSpheres();
 private:
     const Window*                   m_pWindow;
     HWND                            m_hwnd;
@@ -38,14 +40,9 @@ private:
     ImmediateRenderTarget           m_immediate;
     CubeMapRenderTarget             m_environment;
     // shaders
-    ComPtr<ID3D11VertexShader>      m_pbrVert;
-    ComPtr<ID3D11PixelShader>       m_pbrPixel;
-    ComPtr<ID3D11VertexShader>      m_envVert;
-    ComPtr<ID3D11PixelShader>       m_envPixel;
-    ComPtr<ID3D11VertexShader>      m_backgroundVert;
-    ComPtr<ID3D11PixelShader>       m_backgroundPixel;
-    ComPtr<ID3DBlob>                m_pbrVertShaderBlob;
-    ComPtr<ID3DBlob>                m_cubeVertShaderBlob;
+    HlslProgram                     m_pbrProgram;
+    HlslProgram                     m_envProgram;
+    HlslProgram                     m_backgroundProgram;
     // input
     ComPtr<ID3D11Buffer>            m_constantBuffer;
     // buffers

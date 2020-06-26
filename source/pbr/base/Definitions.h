@@ -40,8 +40,8 @@ namespace pbr {
     {
         T width, height;
         template <typename U>
-        Extent2(U w, U h) : width(static_cast<T>(w)) , height(static_cast<T>(h)) { }
-        Extent2() : Extent2(0, 0) { }
+        constexpr Extent2(U w, U h) : width(static_cast<T>(w)) , height(static_cast<T>(h)) { }
+        constexpr Extent2() : Extent2(0, 0) { }
 
         friend ostream& operator<<(ostream& os, const Extent2<T>& e)
         {

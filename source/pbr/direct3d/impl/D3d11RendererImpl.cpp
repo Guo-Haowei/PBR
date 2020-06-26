@@ -25,12 +25,37 @@ void D3d11RendererImpl::Initialize()
     createDevice();
     createSwapchain();
     createImmediateRenderTarget(m_pWindow->GetFrameBufferExtent());
-    createCubeMapRenderTarget(Extent2i(Renderer::CubeMapRes, Renderer::CubeMapRes));
+    createCubeMapRenderTarget(Renderer::CubeMapRes);
 }
 
 void D3d11RendererImpl::Finalize()
 {
 
+}
+
+void D3d11RendererImpl::renderSpheres()
+{
+    // set input layout
+    m_deviceContext->IASetInputLayout(m_sphereLayout.Get());
+    // set vertex/index buffer
+    UINT stride = sizeof(Vertex), offset = 0;
+    m_deviceContext->IASetVertexBuffers(0, 1, m_sphere.vertexBuffer.GetAddressOf(), &stride, &offset);
+    m_deviceContext->IASetIndexBuffer(m_sphere.indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+    const int size = 7;
+    // draw
+    m_deviceContext->DrawIndexedInstanced(m_sphere.indexCount, size * size, 0, 0, 0);
+}
+
+void D3d11RendererImpl::renderCube()
+{
+    // set input layout
+    m_deviceContext->IASetInputLayout(m_cubeLayout.Get());
+    // set buffers
+    UINT stride = sizeof(vec3), offset = 0;
+    m_deviceContext->IASetVertexBuffers(0, 1, m_cube.vertexBuffer.GetAddressOf(), &stride, &offset);
+    m_deviceContext->IASetIndexBuffer(m_cube.indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+    // draw
+    m_deviceContext->DrawIndexed(m_cube.indexCount, 0, 0);
 }
 
 void D3d11RendererImpl::Render(const Camera& camera)
@@ -55,49 +80,28 @@ void D3d11RendererImpl::Render(const Camera& camera)
         m_viewPositionBuffer.Update(m_deviceContext);
         m_viewPositionBuffer.PSSet(m_deviceContext, 1);
     }
-    // draw spheres
+
+    // render spheres
+    m_pbrProgram.set(m_deviceContext);
+    if (camera.IsDirty())
     {
-        // set shader
-        m_deviceContext->VSSetShader(m_pbrVert.Get(), NULL, 0);
-        m_deviceContext->PSSetShader(m_pbrPixel.Get(), NULL, 0);
-        if (camera.IsDirty())
-        {
-            m_perFrameBuffer.VSSet(m_deviceContext, 1);
-            m_viewPositionBuffer.PSSet(m_deviceContext, 1);
-        }
-        // set input layout
-        m_deviceContext->IASetInputLayout(m_sphereLayout.Get());
-        // set vertex/index buffer
-        UINT stride = sizeof(Vertex);
-        UINT offset = 0;
-        m_deviceContext->IASetVertexBuffers(0, 1, m_sphere.vertexBuffer.GetAddressOf(), &stride, &offset);
-        m_deviceContext->IASetIndexBuffer(m_sphere.indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-        const int size = 7;
-        // draw
-        m_deviceContext->DrawIndexedInstanced(m_sphere.indexCount, size * size, 0, 0, 0);
+        m_perFrameBuffer.VSSet(m_deviceContext, 1);
+        m_viewPositionBuffer.PSSet(m_deviceContext, 1);
     }
-    // draw cube
+
+    renderSpheres();
+
+    // render cube
+    m_backgroundProgram.set(m_deviceContext);
+    m_deviceContext->PSSetShaderResources(0, 1, m_environment.srv.GetAddressOf());
+    m_deviceContext->PSSetSamplers(0, 1, m_hdrTexture->m_sampler.GetAddressOf());
+    if (camera.IsDirty())
     {
-        // set shader
-        m_deviceContext->VSSetShader(m_backgroundVert.Get(), NULL, 0);
-        m_deviceContext->PSSetShader(m_backgroundPixel.Get(), NULL, 0);
-        m_deviceContext->PSSetShaderResources(0, 1, m_environment.srv.GetAddressOf());
-        m_deviceContext->PSSetSamplers(0, 1, m_hdrTexture->m_sampler.GetAddressOf());
-        if (camera.IsDirty())
-        {
-            m_perFrameBuffer.VSSet(m_deviceContext, 1);
-            m_viewPositionBuffer.PSSet(m_deviceContext, 1);
-        }
-        // set input layout
-        m_deviceContext->IASetInputLayout(m_cubeLayout.Get());
-        // set vertex/index buffer
-        UINT stride = sizeof(vec3);
-        UINT offset = 0;
-        m_deviceContext->IASetVertexBuffers(0, 1, m_cube.vertexBuffer.GetAddressOf(), &stride, &offset);
-        m_deviceContext->IASetIndexBuffer(m_cube.indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-        // draw
-        m_deviceContext->DrawIndexed(m_cube.indexCount, 0, 0);
+        m_perFrameBuffer.VSSet(m_deviceContext, 1);
+        m_viewPositionBuffer.PSSet(m_deviceContext, 1);
     }
+    renderCube();
+
     // present
     m_swapChain->Present(1, 0); // vsync
     // m_swapChain->Present(0, 0);
@@ -200,7 +204,7 @@ void D3d11RendererImpl::PrepareGpuResources()
     m_lightBuffer.Create(m_device);
     m_viewPositionBuffer.Create(m_device);
     memcpy(&m_lightBuffer.m_cache, &g_lights, m_lightBuffer.BufferSize());
-    m_deviceContext->PSSetShader(m_pbrPixel.Get(), 0, 0);
+    m_deviceContext->PSSetShader(m_pbrProgram.pixelShader.Get(), 0, 0);
     m_lightBuffer.PSSet(m_deviceContext, 0);
     m_lightBuffer.Update(m_deviceContext);
 
@@ -322,17 +326,11 @@ void D3d11RendererImpl::createCubeMapRenderTarget(const Extent2i& extent)
 
 void D3d11RendererImpl::renderToEnvironmentMap()
 {
-    // set input layout
-    m_deviceContext->IASetInputLayout(m_cubeLayout.Get());
     // set viewport
-    setViewport(Extent2i(Renderer::CubeMapRes, Renderer::CubeMapRes));
-    UINT stride = sizeof(vec3), offset = 0;
-    m_deviceContext->IASetVertexBuffers(0, 1, m_cube.vertexBuffer.GetAddressOf(), &stride, &offset);
-    m_deviceContext->IASetIndexBuffer(m_cube.indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+    setViewport(Renderer::CubeMapRes);
 
     // set shader
-    m_deviceContext->VSSetShader(m_envVert.Get(), NULL, 0);
-    m_deviceContext->PSSetShader(m_envPixel.Get(), NULL, 0);
+    m_envProgram.set(m_deviceContext);
     m_deviceContext->PSSetShaderResources(0, 1, m_hdrTexture->m_shaderResourceView.GetAddressOf());
     m_deviceContext->PSSetSamplers(0, 1, m_hdrTexture->m_sampler.GetAddressOf());
 
@@ -352,8 +350,7 @@ void D3d11RendererImpl::renderToEnvironmentMap()
         m_perFrameBuffer.Update(m_deviceContext);
         m_perFrameBuffer.VSSet(m_deviceContext, 1);
 
-        // draw
-        m_deviceContext->DrawIndexed(m_cube.indexCount, 0, 0);
+        renderCube();
     }
 }
 
@@ -365,83 +362,11 @@ void D3d11RendererImpl::cleanupImmediateRenderTarget()
         m_immediate.dsv->Release();
 }
 
-// shaders
-#define PBR_VERT_SHADER "pbr.vert.hlsl"
-#define PBR_PIXEL_SHADER "pbr.pixel.hlsl"
-#define ENV_VERT_SHADER "env.vert.hlsl"
-#define ENV_PIXEL_SHADER "env.pixel.hlsl"
-#define BG_VERT_SHADER "background.vert.hlsl"
-#define BG_PIXEL_SHADER "background.pixel.hlsl"
-
 void D3d11RendererImpl::compileShaders()
 {
-    {
-        // pbr
-        SHADER_COMPILING_START_INFO(PBR_VERT_SHADER);
-        HlslShader::CompileShader(HLSL_DIR PBR_VERT_SHADER, "vs_main", "vs_5_0", m_pbrVertShaderBlob);
-        HRESULT hr = m_device->CreateVertexShader(
-            m_pbrVertShaderBlob->GetBufferPointer(),
-            m_pbrVertShaderBlob->GetBufferSize(),
-            NULL,
-            m_pbrVert.GetAddressOf());
-        D3D_THROW_IF_FAILED(hr, "Failed to create vertex shader");
-        SHADER_COMPILING_END_INFO(PBR_VERT_SHADER);
-        SHADER_COMPILING_START_INFO(PBR_PIXEL_SHADER);
-        ComPtr<ID3DBlob> pixelBlob;
-        HlslShader::CompileShader(HLSL_DIR PBR_PIXEL_SHADER, "ps_main", "ps_5_0", pixelBlob);
-        hr = m_device->CreatePixelShader(
-            pixelBlob->GetBufferPointer(),
-            pixelBlob->GetBufferSize(),
-            NULL,
-            m_pbrPixel.GetAddressOf());
-        D3D_THROW_IF_FAILED(hr, "Failed to create pixel shader");
-        SHADER_COMPILING_END_INFO(PBR_PIXEL_SHADER);
-    }
-    {
-        // environment mapping
-        SHADER_COMPILING_START_INFO(ENV_VERT_SHADER);
-        HlslShader::CompileShader(HLSL_DIR ENV_VERT_SHADER, "vs_main", "vs_5_0", m_cubeVertShaderBlob);
-        HRESULT hr = m_device->CreateVertexShader(
-            m_cubeVertShaderBlob->GetBufferPointer(),
-            m_cubeVertShaderBlob->GetBufferSize(),
-            NULL,
-            m_envVert.GetAddressOf());
-        D3D_THROW_IF_FAILED(hr, "Failed to create vertex shader");
-        SHADER_COMPILING_END_INFO(ENV_VERT_SHADER);
-        SHADER_COMPILING_START_INFO(ENV_PIXEL_SHADER);
-        ComPtr<ID3DBlob> pixelBlob;
-        HlslShader::CompileShader(HLSL_DIR ENV_PIXEL_SHADER, "ps_main", "ps_5_0", pixelBlob);
-        hr = m_device->CreatePixelShader(
-            pixelBlob->GetBufferPointer(),
-            pixelBlob->GetBufferSize(),
-            NULL,
-            m_envPixel.GetAddressOf());
-        D3D_THROW_IF_FAILED(hr, "Failed to create pixel shader");
-        SHADER_COMPILING_END_INFO(ENV_PIXEL_SHADER);
-    }
-    {
-        // background visualization
-        SHADER_COMPILING_START_INFO(BG_VERT_SHADER);
-        ComPtr<ID3DBlob> vertBlob;
-        HlslShader::CompileShader(HLSL_DIR BG_VERT_SHADER, "vs_main", "vs_5_0", vertBlob);
-        HRESULT hr = m_device->CreateVertexShader(
-            vertBlob->GetBufferPointer(),
-            vertBlob->GetBufferSize(),
-            NULL,
-            m_backgroundVert.GetAddressOf());
-        D3D_THROW_IF_FAILED(hr, "Failed to create vertex shader");
-        SHADER_COMPILING_END_INFO(BG_VERT_SHADER);
-        SHADER_COMPILING_START_INFO(BG_PIXEL_SHADER);
-        ComPtr<ID3DBlob> pixelBlob;
-        HlslShader::CompileShader(HLSL_DIR BG_PIXEL_SHADER, "ps_main", "ps_5_0", pixelBlob);
-        hr = m_device->CreatePixelShader(
-            pixelBlob->GetBufferPointer(),
-            pixelBlob->GetBufferSize(),
-            NULL,
-            m_backgroundPixel.GetAddressOf());
-        D3D_THROW_IF_FAILED(hr, "Failed to create pixel shader");
-        SHADER_COMPILING_END_INFO(BG_PIXEL_SHADER);
-    }
+    m_pbrProgram.create(m_device, "pbr");
+    m_envProgram.create(m_device, "env");
+    m_backgroundProgram.create(m_device, "background");
 }
 
 void D3d11RendererImpl::createGeometries()
@@ -450,8 +375,7 @@ void D3d11RendererImpl::createGeometries()
     const auto sphere = CreateSphereMesh();
     {
         // vertex buffer
-        D3D11_BUFFER_DESC bufferDesc;
-        ZeroMemory(&bufferDesc, sizeof(D3D11_BUFFER_DESC));
+        D3D11_BUFFER_DESC bufferDesc {};
         bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
         bufferDesc.ByteWidth = static_cast<uint32_t>(sizeof(Vertex) * sphere.vertices.size());
         bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
@@ -493,8 +417,8 @@ void D3d11RendererImpl::createGeometries()
         HRESULT hr = m_device->CreateInputLayout(
             inputElementDescs,
             ARRAYSIZE(inputElementDescs),
-            m_pbrVertShaderBlob->GetBufferPointer(),
-            m_pbrVertShaderBlob->GetBufferSize(),
+            m_pbrProgram.vertShaderBlob->GetBufferPointer(),
+            m_pbrProgram.vertShaderBlob->GetBufferSize(),
             m_sphereLayout.GetAddressOf()
         );
 
@@ -545,8 +469,8 @@ void D3d11RendererImpl::createGeometries()
         HRESULT hr = m_device->CreateInputLayout(
             inputElementDescs,
             ARRAYSIZE(inputElementDescs),
-            m_cubeVertShaderBlob->GetBufferPointer(),
-            m_cubeVertShaderBlob->GetBufferSize(),
+            m_envProgram.vertShaderBlob->GetBufferPointer(),
+            m_envProgram.vertShaderBlob->GetBufferSize(),
             m_cubeLayout.GetAddressOf()
         );
 

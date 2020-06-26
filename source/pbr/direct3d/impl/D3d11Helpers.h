@@ -87,10 +87,17 @@ typedef ConstantBuffer<LightDataCache> LightBuffer;
 typedef ConstantBuffer<ViewPositionCache> ViewPositionBuffer;
 
 
-class HlslShader
+struct HlslProgram
 {
-public:
-    static void CompileShader(const char* file, LPCSTR entry, LPCSTR target, ComPtr<ID3DBlob>& sourceBlob);
+    static void CompileShader(string const& file, LPCSTR entry, LPCSTR target, ComPtr<ID3DBlob>& sourceBlob);
+
+    void create(ComPtr<ID3D11Device>& device, char const* name);
+
+    void set(ComPtr<ID3D11DeviceContext>& deviceContext);
+
+    ComPtr<ID3D11VertexShader> vertShader;
+    ComPtr<ID3D11PixelShader> pixelShader;
+    ComPtr<ID3DBlob> vertShaderBlob;
 };
 
 struct Texture2D

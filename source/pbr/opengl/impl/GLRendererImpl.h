@@ -22,6 +22,7 @@ private:
     void createGeometries();
     void clearGeometries();
     void createCubeMapTexture();
+    void createShaderProgram(GlslProgram& program, string const& vertSource, string const& fragSource, char const* debugName);
 private:
     const Window*   m_pWindow;
     GlslProgram     m_pbrProgram;

@@ -110,28 +110,29 @@ void GLRendererImpl::PrepareGpuResources()
     m_hdrTexture = CreateHDRTexture(image);
     free(image.buffer.pData);
 
+    // convert HDR equirectuangular environment map to cubemap equivalent
     createCubeMapTexture();
+    // create an irradiance cubemap, and solve diffuse integral by convolution to create an irradiance cube map
 }
 
 void GLRendererImpl::createCubeMapTexture()
 {
-    const int cubeTextureSize = Renderer::CubeMapRes;
     GLuint captureFbo, captureRbo;
     glGenFramebuffers(1, &captureFbo);
     glGenRenderbuffers(1, &captureRbo);
     glBindFramebuffer(GL_FRAMEBUFFER, captureFbo);
     glBindRenderbuffer(GL_RENDERBUFFER, captureRbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, cubeTextureSize, cubeTextureSize);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, Renderer::CubeMapRes.width, Renderer::CubeMapRes.height);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, captureRbo);
 
-    m_cubeMapTexture = CreateEmptyCubeMap(cubeTextureSize);
+    m_cubeMapTexture = CreateEmptyCubeMap(Renderer::CubeMapRes.width);
 
     CubeCamera cubeCamera(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
     mat4 projection = cubeCamera.ProjectionMatrixGl();
     array<mat4, 6> viewMatrices;
     cubeCamera.ViewMatricesGl(viewMatrices);
 
-    glViewport(0, 0, cubeTextureSize, cubeTextureSize);
+    glViewport(0, 0, Renderer::CubeMapRes.width, Renderer::CubeMapRes.height);
     m_envProgram.use();
     m_envProgram.setUniform("u_env_map", 0);
     m_envProgram.setUniform("u_per_frame.projection", projection);
@@ -155,6 +156,15 @@ void GLRendererImpl::createCubeMapTexture()
 #define BG_VERT     "background.vert"
 #define BG_FRAG     "background.frag"
 
+void GLRendererImpl::createShaderProgram(GlslProgram& program, string const& vertSource, string const& fragSource, char const* debugName)
+{
+    SHADER_COMPILING_START_INFO(debugName);
+    GLuint vertexShaderHandle = GlslProgram::createShaderFromString(vertSource, GL_VERTEX_SHADER);
+    GLuint fragmentShaderHandle = GlslProgram::createShaderFromString(fragSource, GL_FRAGMENT_SHADER);
+    SHADER_COMPILING_END_INFO(debugName);
+    program = GlslProgram::create(vertexShaderHandle, fragmentShaderHandle);
+}
+
 void GLRendererImpl::compileShaders()
 {
     // pbr
@@ -166,13 +176,7 @@ void GLRendererImpl::compileShaders()
         string vertSource = utility::ReadAsciiFile(GLSL_DIR PBR_VERT);
         string fragSource = utility::ReadAsciiFile(GLSL_DIR PBR_FRAG);
 #endif
-        SHADER_COMPILING_START_INFO(PBR_VERT);
-        GLuint vertexShaderHandle = GlslProgram::createShaderFromString(vertSource, GL_VERTEX_SHADER);
-        SHADER_COMPILING_END_INFO(PBR_VERT);
-        SHADER_COMPILING_START_INFO(PBR_FRAG);
-        GLuint fragmentShaderHandle = GlslProgram::createShaderFromString(fragSource, GL_FRAGMENT_SHADER);
-        SHADER_COMPILING_END_INFO(PBR_FRAG);
-        m_pbrProgram = GlslProgram::create(vertexShaderHandle, fragmentShaderHandle);
+        createShaderProgram(m_pbrProgram, vertSource, fragSource, "PBR shader program");
     }
     // environment
     {
@@ -183,13 +187,7 @@ void GLRendererImpl::compileShaders()
         string vertSource = utility::ReadAsciiFile(GLSL_DIR ENV_VERT);
         string fragSource = utility::ReadAsciiFile(GLSL_DIR ENV_FRAG);
 #endif
-        SHADER_COMPILING_START_INFO(ENV_VERT);
-        GLuint vertexShaderHandle = GlslProgram::createShaderFromString(vertSource, GL_VERTEX_SHADER);
-        SHADER_COMPILING_END_INFO(ENV_VERT);
-        SHADER_COMPILING_START_INFO(ENV_FRAG);
-        GLuint fragmentShaderHandle = GlslProgram::createShaderFromString(fragSource, GL_FRAGMENT_SHADER);
-        SHADER_COMPILING_END_INFO(ENV_FRAG);
-        m_envProgram = GlslProgram::create(vertexShaderHandle, fragmentShaderHandle);
+        createShaderProgram(m_envProgram, vertSource, fragSource, "environment shader program");
     }
     // background
     {
@@ -200,13 +198,7 @@ void GLRendererImpl::compileShaders()
         string vertSource = utility::ReadAsciiFile(GLSL_DIR BG_VERT);
         string fragSource = utility::ReadAsciiFile(GLSL_DIR BG_FRAG);
 #endif
-        SHADER_COMPILING_START_INFO(BG_VERT);
-        GLuint vertexShaderHandle = GlslProgram::createShaderFromString(vertSource, GL_VERTEX_SHADER);
-        SHADER_COMPILING_END_INFO(BG_VERT);
-        SHADER_COMPILING_START_INFO(BG_FRAG);
-        GLuint fragmentShaderHandle = GlslProgram::createShaderFromString(fragSource, GL_FRAGMENT_SHADER);
-        SHADER_COMPILING_END_INFO(BG_FRAG);
-        m_backgroundProgram = GlslProgram::create(vertexShaderHandle, fragmentShaderHandle);
+        createShaderProgram(m_backgroundProgram, vertSource, fragSource, "background shader program");
     }
 
     // upload constant buffers
