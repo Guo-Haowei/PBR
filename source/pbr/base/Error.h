@@ -45,10 +45,10 @@ namespace pbr {
 #ifdef PBR_VERBOSE
 #define SHADER_COMPILING_START_INFO(shader) \
     std::cout << "--------------------------------------------\n"; \
-    std::cout << "[Log] compiling shader " << shader << std::endl;
+    std::cout << "[Log] compiling " << shader << std::endl;
 
 #define SHADER_COMPILING_END_INFO(shader) \
-    std::cout << "[Log] shader " << shader << " compiled successfully" << std::endl;
+    std::cout << "[Log] " << shader << " compiled successfully" << std::endl;
 #else
 #define SHADER_COMPILING_START_INFO(shader)
 #define SHADER_COMPILING_END_INFO(shader)

@@ -25,6 +25,9 @@ uniform Light u_lights[MAX_LIGHT_COUNT];
 
 uniform vec4 u_view_pos;
 
+/// IBL
+uniform samplerCube u_irradiance_map;
+
 // NDF(n, h, alpha) = alpha^2 / (pi * ((n dot h)^2 * (alpha^2 - 1) + 1)^2)
 float DistributionGGX(in vec3 N, in vec3 H, float roughness)
 {
@@ -122,9 +125,15 @@ void main()
         Lo += (kD * albedo / PI + specular) * radiance * NdotL;
     }
 
-    vec3 ambient = vec3(0.03) * albedo * ao;
-    vec3 color = ambient + Lo;
+    // image based ambient lighting
+    vec3 kS = FresnelSchlick(max(dot(N, V), 0.0), F0);
+    vec3 kD = 1.0 - kS;
+    kD *= 1.0 - metallic;
+    vec3 irradiance = texture(u_irradiance_map, N).rgb;
+    vec3 diffuse = irradiance * albedo;
+    vec3 ambient = (kD * diffuse) * ao;
 
+    vec3 color = ambient + Lo;
     // HDR tonemapping
     color = color / (color + vec3(1.0));
     // gamma correction

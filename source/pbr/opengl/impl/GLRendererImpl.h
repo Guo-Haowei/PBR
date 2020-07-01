@@ -17,21 +17,26 @@ public:
     void Resize(const Extent2i& extent);
     void Finalize();
 private:
+    void createFramebuffer();
     void compileShaders();
     void uploadConstantUniforms();
     void createGeometries();
     void clearGeometries();
-    void createCubeMapTexture();
+    void createCubeMap();
+    void createIrradianceMap();
     void createShaderProgram(GlslProgram& program, string const& vertSource, string const& fragSource, char const* debugName);
 private:
     const Window*   m_pWindow;
     GlslProgram     m_pbrProgram;
-    GlslProgram     m_envProgram;
+    GlslProgram     m_convertProgram;
+    GlslProgram     m_irradianceProgram;
     GlslProgram     m_backgroundProgram;
     PerDrawData     m_sphere;
     PerDrawData     m_cube;
     GLTexture       m_hdrTexture;
     GLTexture       m_cubeMapTexture;
+    GLTexture       m_irradianceTexture;
+    GLFramebuffer   m_framebuffer;
 };
 
 } } // namespace pbr::gl

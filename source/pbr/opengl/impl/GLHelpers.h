@@ -18,6 +18,12 @@ namespace pbr { namespace gl {
         GLuint handle;
     };
 
+    struct GLFramebuffer
+    {
+        GLuint fbo = 0;
+        GLuint rbo = 0;
+    };
+
     extern GLTexture CreateHDRTexture(const Image& image);
 
     extern GLTexture CreateEmptyCubeMap(int size);

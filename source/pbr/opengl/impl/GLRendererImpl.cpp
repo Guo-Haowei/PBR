@@ -56,8 +56,16 @@ void GLRendererImpl::Render(const Camera& camera)
     const Extent2i& extent = m_pWindow->GetFrameBufferExtent();
     glViewport(0, 0, extent.width, extent.height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_irradianceTexture.handle);
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_cubeMapTexture.handle);
+
     // draw spheres
     m_pbrProgram.use();
+    m_pbrProgram.setUniform("u_irradiance_map", 0);
     if (camera.IsDirty())
     {
         m_pbrProgram.setUniform("u_per_frame.view", camera.ViewMatrix());
@@ -77,8 +85,6 @@ void GLRendererImpl::Render(const Camera& camera)
     }
 
     m_backgroundProgram.setUniform("u_env_map", 1);
-    glBindTexture(m_cubeMapTexture.type, m_cubeMapTexture.handle);
-    glActiveTexture(GL_TEXTURE1);
 
     glBindVertexArray(m_cube.vao);
     glDrawElements(GL_TRIANGLES, m_cube.indexCount, GL_UNSIGNED_INT, 0);
@@ -111,50 +117,91 @@ void GLRendererImpl::PrepareGpuResources()
     free(image.buffer.pData);
 
     // convert HDR equirectuangular environment map to cubemap equivalent
-    createCubeMapTexture();
+    createFramebuffer();
+    createCubeMap();
+    createIrradianceMap();
     // create an irradiance cubemap, and solve diffuse integral by convolution to create an irradiance cube map
 }
 
-void GLRendererImpl::createCubeMapTexture()
+void GLRendererImpl::createFramebuffer()
 {
-    GLuint captureFbo, captureRbo;
-    glGenFramebuffers(1, &captureFbo);
-    glGenRenderbuffers(1, &captureRbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, captureFbo);
-    glBindRenderbuffer(GL_RENDERBUFFER, captureRbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, Renderer::CubeMapRes.width, Renderer::CubeMapRes.height);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, captureRbo);
+    glGenFramebuffers(1, &m_framebuffer.fbo);
+    glGenRenderbuffers(1, &m_framebuffer.rbo);
+}
 
-    m_cubeMapTexture = CreateEmptyCubeMap(Renderer::CubeMapRes.width);
+void GLRendererImpl::createCubeMap()
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer.fbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, m_framebuffer.rbo);
+
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, Renderer::cubeMapRes, Renderer::cubeMapRes);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_framebuffer.rbo);
+    m_cubeMapTexture = CreateEmptyCubeMap(Renderer::cubeMapRes);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_cubeMapTexture.handle);
 
     CubeCamera cubeCamera(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
     mat4 projection = cubeCamera.ProjectionMatrixGl();
     array<mat4, 6> viewMatrices;
     cubeCamera.ViewMatricesGl(viewMatrices);
 
-    glViewport(0, 0, Renderer::CubeMapRes.width, Renderer::CubeMapRes.height);
-    m_envProgram.use();
-    m_envProgram.setUniform("u_env_map", 0);
-    m_envProgram.setUniform("u_per_frame.projection", projection);
+    glViewport(0, 0, Renderer::cubeMapRes, Renderer::cubeMapRes);
+    m_convertProgram.use();
+    m_convertProgram.setUniform("u_env_map", 0);
+    m_convertProgram.setUniform("u_per_frame.projection", projection);
     for (int i = 0; i < 6; ++i)
     {
-        m_envProgram.setUniform("u_per_frame.view", viewMatrices[i]);
+        m_convertProgram.setUniform("u_per_frame.view", viewMatrices[i]);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, m_cubeMapTexture.handle, 0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glBindVertexArray(m_cube.vao);
         glDrawElements(GL_TRIANGLES, m_cube.indexCount, GL_UNSIGNED_INT, 0);
     }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
 
+void GLRendererImpl::createIrradianceMap()
+{
+    glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer.fbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, m_framebuffer.rbo);
+
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, Renderer::irradianceMapRes, Renderer::irradianceMapRes);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_framebuffer.rbo);
+    m_irradianceTexture = CreateEmptyCubeMap(Renderer::irradianceMapRes);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_cubeMapTexture.handle);
+
+    CubeCamera cubeCamera(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+    mat4 projection = cubeCamera.ProjectionMatrixGl();
+    array<mat4, 6> viewMatrices;
+    cubeCamera.ViewMatricesGl(viewMatrices);
+
+    glViewport(0, 0, Renderer::irradianceMapRes, Renderer::irradianceMapRes);
+    m_irradianceProgram.use();
+    m_irradianceProgram.setUniform("u_env_map", 0);
+    m_irradianceProgram.setUniform("u_per_frame.projection", projection);
+
+    for (int i = 0; i < 6; ++i)
+    {
+        m_irradianceProgram.setUniform("u_per_frame.view", viewMatrices[i]);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, m_irradianceTexture.handle, 0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glBindVertexArray(m_cube.vao);
+        glDrawElements(GL_TRIANGLES, m_cube.indexCount, GL_UNSIGNED_INT, 0);
+    }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 // shaders
-#define PBR_VERT    "pbr.vert"
-#define PBR_FRAG    "pbr.frag"
-#define ENV_VERT    "env.vert"
-#define ENV_FRAG    "env.frag"
-#define BG_VERT     "background.vert"
-#define BG_FRAG     "background.frag"
+#define PBR_VERT            "pbr.vert"
+#define PBR_FRAG            "pbr.frag"
+
+#define TO_CUBEMAP_FRAG     "to_cubemap.frag"
+#define CUBEMAP_VERT        "cubemap.vert"
+#define IRRADIANCE_FRAG     "irradiance.frag"
+
+#define BG_VERT             "background.vert"
+#define BG_FRAG             "background.frag"
 
 void GLRendererImpl::createShaderProgram(GlslProgram& program, string const& vertSource, string const& fragSource, char const* debugName)
 {
@@ -178,16 +225,27 @@ void GLRendererImpl::compileShaders()
 #endif
         createShaderProgram(m_pbrProgram, vertSource, fragSource, "PBR shader program");
     }
-    // environment
+    // convert cubemap
     {
 #if TARGET_PLATFORM == PLATFORM_EMSCRIPTEN
-        string vertSource = string(generated::env_vert_c_str);
-        string fragSource = string(generated::env_frag_c_str);
+        string vertSource = string(generated::cubemap_vert_c_str);
+        string fragSource = string(generated::to_cubemap_frag_c_str);
 #else
-        string vertSource = utility::ReadAsciiFile(GLSL_DIR ENV_VERT);
-        string fragSource = utility::ReadAsciiFile(GLSL_DIR ENV_FRAG);
+        string vertSource = utility::ReadAsciiFile(GLSL_DIR CUBEMAP_VERT);
+        string fragSource = utility::ReadAsciiFile(GLSL_DIR TO_CUBEMAP_FRAG);
 #endif
-        createShaderProgram(m_envProgram, vertSource, fragSource, "environment shader program");
+        createShaderProgram(m_convertProgram, vertSource, fragSource, "convert shader program");
+    }
+    // irradiance
+    {
+#if TARGET_PLATFORM == PLATFORM_EMSCRIPTEN
+        string vertSource = string(generated::cubemap_vert_c_str);
+        string fragSource = string(generated::irradiance_frag_c_str);
+#else
+        string vertSource = utility::ReadAsciiFile(GLSL_DIR CUBEMAP_VERT);
+        string fragSource = utility::ReadAsciiFile(GLSL_DIR IRRADIANCE_FRAG);
+#endif
+        createShaderProgram(m_irradianceProgram, vertSource, fragSource, "irradiance shader program");
     }
     // background
     {
@@ -259,8 +317,8 @@ void GLRendererImpl::uploadConstantUniforms()
         m_pbrProgram.setUniform(light + "color", g_lights[i].color);
     }
 
-    m_envProgram.use();
-    m_envProgram.setUniform("u_env_map", 0);
+    m_convertProgram.use();
+    m_convertProgram.setUniform("u_env_map", 0);
 }
 
 } } // namespace pbr::gl

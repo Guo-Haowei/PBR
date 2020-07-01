@@ -25,7 +25,7 @@ void D3d11RendererImpl::Initialize()
     createDevice();
     createSwapchain();
     createImmediateRenderTarget(m_pWindow->GetFrameBufferExtent());
-    createCubeMapRenderTarget(Renderer::CubeMapRes);
+    createCubeMapRenderTarget({ Renderer::cubeMapRes, Renderer::cubeMapRes });
 }
 
 void D3d11RendererImpl::Finalize()
@@ -327,7 +327,7 @@ void D3d11RendererImpl::createCubeMapRenderTarget(const Extent2i& extent)
 void D3d11RendererImpl::renderToEnvironmentMap()
 {
     // set viewport
-    setViewport(Renderer::CubeMapRes);
+    setViewport({ Renderer::cubeMapRes, Renderer::cubeMapRes });
 
     // set shader
     m_envProgram.set(m_deviceContext);

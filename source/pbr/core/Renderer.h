@@ -10,7 +10,8 @@ class Camera;
 class Renderer
 {
 public:
-    static constexpr Extent2i CubeMapRes { 512, 512 };
+    static constexpr int cubeMapRes { 512 };
+    static constexpr int irradianceMapRes { 32 };
 
     static Renderer* CreateRenderer(const Window* pWindow);
     virtual void Initialize() = 0;
