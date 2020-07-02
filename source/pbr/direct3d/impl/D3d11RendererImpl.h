@@ -19,12 +19,13 @@ private:
     void createDevice();
     void createSwapchain();
     void createImmediateRenderTarget(const Extent2i& extent);
-    void createCubeMapRenderTarget(const Extent2i& extent);
+    void createCubeMapRenderTarget(int res, CubeMapRenderTarget& target);
     void cleanupImmediateRenderTarget();
     void compileShaders();
     void createGeometries();
     void setViewport(const Extent2i& extent);
     void renderToEnvironmentMap();
+    void renderToIrradianceMap();
     void renderCube();
     void renderSpheres();
 private:
@@ -39,9 +40,11 @@ private:
     // render target
     ImmediateRenderTarget           m_immediate;
     CubeMapRenderTarget             m_environment;
+    CubeMapRenderTarget             m_irradiance;
     // shaders
     HlslProgram                     m_pbrProgram;
-    HlslProgram                     m_envProgram;
+    HlslProgram                     m_convertProgram;
+    HlslProgram                     m_irradianceProgram;
     HlslProgram                     m_backgroundProgram;
     // input
     ComPtr<ID3D11Buffer>            m_constantBuffer;

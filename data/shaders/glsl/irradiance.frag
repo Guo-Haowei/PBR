@@ -31,5 +31,4 @@ void main()
 
     irradiance = PI * irradiance * (1.0 / samples);
     out_color = vec4(irradiance, 1.0);
-    // out_color = vec4(texture(u_env_map, pass_position).rgb, 1.0);
 }

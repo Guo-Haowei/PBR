@@ -25,6 +25,9 @@ cbuffer PerFrameBuffer : register(b1)
     float4 view_position;
 };
 
+TextureCube irradianceTexture : register(t0);
+SamplerState irradianceSampler : register(s0);
+
 // NDF(n, h, alpha) = alpha^2 / (pi * ((n dot h)^2 * (alpha^2 - 1) + 1)^2)
 float DistributionGGX(in float3 N, in float3 H, float roughness)
 {
@@ -74,7 +77,7 @@ float3 mix(float3 x, float3 y, float a)
 }
 
 static const float3 albedo = float3(0.5, 0.0, 0.0);
-static const float ao = 0.0;
+static const float ao = 1.0;
 
 float4 ps_main(out_vs input) : SV_TARGET
 {
@@ -120,13 +123,20 @@ float4 ps_main(out_vs input) : SV_TARGET
         // multiply kD by the inverse metalness such that only non-metals
         // have diffuse lighting, or a linear blend if partly metal (pure metals
         // have no diffuse light).
-        kD *= 1.0 - metallic;
+        kD *= (1.0 - metallic);
 
         // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
         Lo += (kD * albedo / PI + specular) * radiance * NdotL;
     }
 
-    float3 ambient = float3(0.03, 0.03, 0.03) * albedo * ao;
+    // image based ambient lighting
+    float3 kS = FresnelSchlick(max(dot(N, V), 0.0), F0);
+    float3 kD = 1.0 - kS;
+    kD *= (1.0 - metallic);
+    float3 irradiance = irradianceTexture.Sample(irradianceSampler, N).rgb;
+    float3 diffuse = irradiance * albedo;
+    float3 ambient = (kD * diffuse) * ao;
+
     float3 color = ambient + Lo;
 
     // HDR tonemapping

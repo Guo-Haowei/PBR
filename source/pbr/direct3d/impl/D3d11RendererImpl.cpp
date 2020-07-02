@@ -25,7 +25,8 @@ void D3d11RendererImpl::Initialize()
     createDevice();
     createSwapchain();
     createImmediateRenderTarget(m_pWindow->GetFrameBufferExtent());
-    createCubeMapRenderTarget({ Renderer::cubeMapRes, Renderer::cubeMapRes });
+    createCubeMapRenderTarget(Renderer::cubeMapRes, m_environment);
+    createCubeMapRenderTarget(Renderer::irradianceMapRes, m_irradiance);
 }
 
 void D3d11RendererImpl::Finalize()
@@ -83,6 +84,10 @@ void D3d11RendererImpl::Render(const Camera& camera)
 
     // render spheres
     m_pbrProgram.set(m_deviceContext);
+    m_deviceContext->PSSetShaderResources(0, 1, m_irradiance.srv.GetAddressOf());
+    // m_deviceContext->PSSetShaderResources(0, 1, m_environment.srv.GetAddressOf());
+    m_deviceContext->PSSetSamplers(0, 1, m_hdrTexture->m_sampler.GetAddressOf());
+
     if (camera.IsDirty())
     {
         m_perFrameBuffer.VSSet(m_deviceContext, 1);
@@ -91,7 +96,7 @@ void D3d11RendererImpl::Render(const Camera& camera)
 
     renderSpheres();
 
-    // render cube
+    // render background
     m_backgroundProgram.set(m_deviceContext);
     m_deviceContext->PSSetShaderResources(0, 1, m_environment.srv.GetAddressOf());
     m_deviceContext->PSSetSamplers(0, 1, m_hdrTexture->m_sampler.GetAddressOf());
@@ -233,8 +238,11 @@ void D3d11RendererImpl::PrepareGpuResources()
     }
 
     m_deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    // render environment map once gpu resources are ready
+    // render environment map only once
     renderToEnvironmentMap();
+    // FIXME: environment map will not be ready if only render once
+    renderToIrradianceMap();
+    renderToIrradianceMap();
 }
 
 void D3d11RendererImpl::Resize(const Extent2i& extent)
@@ -269,11 +277,11 @@ void D3d11RendererImpl::createImmediateRenderTarget(const Extent2i& extent)
         "Failed to create depth stencil view");
 }
 
-void D3d11RendererImpl::createCubeMapRenderTarget(const Extent2i& extent)
+void D3d11RendererImpl::createCubeMapRenderTarget(int res, CubeMapRenderTarget& target)
 {
     D3D11_TEXTURE2D_DESC textureDesc {};
-    textureDesc.Width = extent.width;
-    textureDesc.Height = extent.height;
+    textureDesc.Width = res;
+    textureDesc.Height = res;
     textureDesc.MipLevels = 1;
     textureDesc.ArraySize = 6;
     textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
@@ -283,26 +291,26 @@ void D3d11RendererImpl::createCubeMapRenderTarget(const Extent2i& extent)
     textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
     textureDesc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
 
-    D3D_THROW_IF_FAILED(m_device->CreateTexture2D(&textureDesc, NULL, m_environment.cubeBuffer.GetAddressOf()),
+    D3D_THROW_IF_FAILED(m_device->CreateTexture2D(&textureDesc, NULL, target.cubeBuffer.GetAddressOf()),
         "Failed to create cube buffer");
 
     D3D11_TEXTURE2D_DESC depthStencilDesc {};
-    depthStencilDesc.Width = extent.width;
-    depthStencilDesc.Height = extent.height;
+    depthStencilDesc.Width = res;
+    depthStencilDesc.Height = res;
     depthStencilDesc.MipLevels = depthStencilDesc.ArraySize = 1;
     depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
     depthStencilDesc.SampleDesc.Count = 1;
     depthStencilDesc.SampleDesc.Quality = 0;
     depthStencilDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
 
-    D3D_THROW_IF_FAILED(m_device->CreateTexture2D(&depthStencilDesc, 0, m_environment.depthBuffer.GetAddressOf()),
+    D3D_THROW_IF_FAILED(m_device->CreateTexture2D(&depthStencilDesc, 0, target.depthBuffer.GetAddressOf()),
         "Failed to create depth buffer");
 
     D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc {};
     srvDesc.Format = textureDesc.Format;
     srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
     srvDesc.TextureCube.MipLevels = 1;
-    D3D_THROW_IF_FAILED(m_device->CreateShaderResourceView(m_environment.cubeBuffer.Get(), &srvDesc, m_environment.srv.GetAddressOf()),
+    D3D_THROW_IF_FAILED(m_device->CreateShaderResourceView(target.cubeBuffer.Get(), &srvDesc, target.srv.GetAddressOf()),
         "Failed to create shader resource view");
 
     D3D11_RENDER_TARGET_VIEW_DESC rtvDesc {};
@@ -310,18 +318,46 @@ void D3d11RendererImpl::createCubeMapRenderTarget(const Extent2i& extent)
     rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
     rtvDesc.Texture2DArray.MipSlice = 0;
     rtvDesc.Texture2DArray.ArraySize = 1;
-    for (int i = 0; i < m_environment.rtvs.size(); ++i)
+    for (int i = 0; i < 6; ++i)
     {
         rtvDesc.Texture2DArray.FirstArraySlice = D3D11CalcSubresource(0, i, 1);
-        D3D_THROW_IF_FAILED(m_device->CreateRenderTargetView(m_environment.cubeBuffer.Get(), &rtvDesc, m_environment.rtvs[i].GetAddressOf()),
+        D3D_THROW_IF_FAILED(m_device->CreateRenderTargetView(target.cubeBuffer.Get(), &rtvDesc, target.rtvs[i].GetAddressOf()),
             "Failed to create render target view " + std::to_string(i));
     }
 
     D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc {};
 
-    D3D_THROW_IF_FAILED(m_device->CreateDepthStencilView(m_environment.depthBuffer.Get(), nullptr, m_environment.dsv.GetAddressOf()),
+    D3D_THROW_IF_FAILED(m_device->CreateDepthStencilView(target.depthBuffer.Get(), nullptr, target.dsv.GetAddressOf()),
         "Failed to create depth stencil view");
 
+}
+
+void D3d11RendererImpl::renderToIrradianceMap()
+{
+    // set viewport
+    setViewport({ Renderer::irradianceMapRes, Renderer::irradianceMapRes });
+
+    m_irradianceProgram.set(m_deviceContext);
+    m_deviceContext->PSSetShaderResources(1, 1, m_environment.srv.GetAddressOf());
+    m_deviceContext->PSSetSamplers(1, 1, m_hdrTexture->m_sampler.GetAddressOf());
+
+    CubeCamera camera(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+    m_perFrameBuffer.m_cache.projection = camera.ProjectionMatrixD3d();
+    array<mat4, 6> viewMatrices;
+    camera.ViewMatricesD3d(viewMatrices);
+
+    for (int i = 0; i < 6; ++i)
+    {
+        m_deviceContext->OMSetRenderTargets(1, m_irradiance.rtvs[i].GetAddressOf(), m_irradiance.dsv.Get());
+        m_deviceContext->ClearRenderTargetView(m_irradiance.rtvs[i].Get(), clearColor);
+        m_deviceContext->ClearDepthStencilView(m_irradiance.dsv.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+
+        // update shared constant buffer
+        m_perFrameBuffer.m_cache.view = viewMatrices[i];
+        m_perFrameBuffer.Update(m_deviceContext);
+        m_perFrameBuffer.VSSet(m_deviceContext, 1);
+        renderCube();
+    }
 }
 
 void D3d11RendererImpl::renderToEnvironmentMap()
@@ -330,7 +366,7 @@ void D3d11RendererImpl::renderToEnvironmentMap()
     setViewport({ Renderer::cubeMapRes, Renderer::cubeMapRes });
 
     // set shader
-    m_envProgram.set(m_deviceContext);
+    m_convertProgram.set(m_deviceContext);
     m_deviceContext->PSSetShaderResources(0, 1, m_hdrTexture->m_shaderResourceView.GetAddressOf());
     m_deviceContext->PSSetSamplers(0, 1, m_hdrTexture->m_sampler.GetAddressOf());
 
@@ -349,7 +385,6 @@ void D3d11RendererImpl::renderToEnvironmentMap()
         m_perFrameBuffer.m_cache.view = viewMatrices[i];
         m_perFrameBuffer.Update(m_deviceContext);
         m_perFrameBuffer.VSSet(m_deviceContext, 1);
-
         renderCube();
     }
 }
@@ -364,9 +399,10 @@ void D3d11RendererImpl::cleanupImmediateRenderTarget()
 
 void D3d11RendererImpl::compileShaders()
 {
-    m_pbrProgram.create(m_device, "pbr");
-    m_envProgram.create(m_device, "env");
-    m_backgroundProgram.create(m_device, "background");
+    m_pbrProgram.create(m_device, "PBR Program", "pbr");
+    m_convertProgram.create(m_device, "Convert Program", "cubemap", "to_cubemap");
+    m_irradianceProgram.create(m_device, "Irradiance Program", "cubemap", "irradiance");
+    m_backgroundProgram.create(m_device, "Background Program", "background");
 }
 
 void D3d11RendererImpl::createGeometries()
@@ -469,8 +505,8 @@ void D3d11RendererImpl::createGeometries()
         HRESULT hr = m_device->CreateInputLayout(
             inputElementDescs,
             ARRAYSIZE(inputElementDescs),
-            m_envProgram.vertShaderBlob->GetBufferPointer(),
-            m_envProgram.vertShaderBlob->GetBufferSize(),
+            m_convertProgram.vertShaderBlob->GetBufferPointer(),
+            m_convertProgram.vertShaderBlob->GetBufferSize(),
             m_cubeLayout.GetAddressOf()
         );
 

@@ -18,4 +18,3 @@ float4 ps_main(out_vs input) : SV_TARGET
     env_color = pow(env_color, float3(ratio, ratio, ratio));
     return float4(env_color, 1.0);
 }
-

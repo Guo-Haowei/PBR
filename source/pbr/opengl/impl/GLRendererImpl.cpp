@@ -193,16 +193,6 @@ void GLRendererImpl::createIrradianceMap()
 }
 
 // shaders
-#define PBR_VERT            "pbr.vert"
-#define PBR_FRAG            "pbr.frag"
-
-#define TO_CUBEMAP_FRAG     "to_cubemap.frag"
-#define CUBEMAP_VERT        "cubemap.vert"
-#define IRRADIANCE_FRAG     "irradiance.frag"
-
-#define BG_VERT             "background.vert"
-#define BG_FRAG             "background.frag"
-
 void GLRendererImpl::createShaderProgram(GlslProgram& program, string const& vertSource, string const& fragSource, char const* debugName)
 {
     SHADER_COMPILING_START_INFO(debugName);
@@ -220,10 +210,10 @@ void GLRendererImpl::compileShaders()
         string vertSource = string(generated::pbr_vert_c_str);
         string fragSource = string(generated::pbr_frag_c_str);
 #else
-        string vertSource = utility::ReadAsciiFile(GLSL_DIR PBR_VERT);
-        string fragSource = utility::ReadAsciiFile(GLSL_DIR PBR_FRAG);
+        string vertSource = utility::ReadAsciiFile(GLSL_DIR "pbr.vert");
+        string fragSource = utility::ReadAsciiFile(GLSL_DIR "pbr.frag");
 #endif
-        createShaderProgram(m_pbrProgram, vertSource, fragSource, "PBR shader program");
+        createShaderProgram(m_pbrProgram, vertSource, fragSource, "PBR Program");
     }
     // convert cubemap
     {
@@ -231,10 +221,10 @@ void GLRendererImpl::compileShaders()
         string vertSource = string(generated::cubemap_vert_c_str);
         string fragSource = string(generated::to_cubemap_frag_c_str);
 #else
-        string vertSource = utility::ReadAsciiFile(GLSL_DIR CUBEMAP_VERT);
-        string fragSource = utility::ReadAsciiFile(GLSL_DIR TO_CUBEMAP_FRAG);
+        string vertSource = utility::ReadAsciiFile(GLSL_DIR "cubemap.vert");
+        string fragSource = utility::ReadAsciiFile(GLSL_DIR "to_cubemap.frag");
 #endif
-        createShaderProgram(m_convertProgram, vertSource, fragSource, "convert shader program");
+        createShaderProgram(m_convertProgram, vertSource, fragSource, "Convert Program");
     }
     // irradiance
     {
@@ -242,10 +232,10 @@ void GLRendererImpl::compileShaders()
         string vertSource = string(generated::cubemap_vert_c_str);
         string fragSource = string(generated::irradiance_frag_c_str);
 #else
-        string vertSource = utility::ReadAsciiFile(GLSL_DIR CUBEMAP_VERT);
-        string fragSource = utility::ReadAsciiFile(GLSL_DIR IRRADIANCE_FRAG);
+        string vertSource = utility::ReadAsciiFile(GLSL_DIR "cubemap.vert");
+        string fragSource = utility::ReadAsciiFile(GLSL_DIR "irradiance.frag");
 #endif
-        createShaderProgram(m_irradianceProgram, vertSource, fragSource, "irradiance shader program");
+        createShaderProgram(m_irradianceProgram, vertSource, fragSource, "Irradiance Program");
     }
     // background
     {
@@ -253,10 +243,10 @@ void GLRendererImpl::compileShaders()
         string vertSource = string(generated::background_vert_c_str);
         string fragSource = string(generated::background_frag_c_str);
 #else
-        string vertSource = utility::ReadAsciiFile(GLSL_DIR BG_VERT);
-        string fragSource = utility::ReadAsciiFile(GLSL_DIR BG_FRAG);
+        string vertSource = utility::ReadAsciiFile(GLSL_DIR "background.vert");
+        string fragSource = utility::ReadAsciiFile(GLSL_DIR "background.frag");
 #endif
-        createShaderProgram(m_backgroundProgram, vertSource, fragSource, "background shader program");
+        createShaderProgram(m_backgroundProgram, vertSource, fragSource, "Background Program");
     }
 
     // upload constant buffers

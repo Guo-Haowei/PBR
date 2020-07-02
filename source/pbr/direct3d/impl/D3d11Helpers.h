@@ -91,7 +91,7 @@ struct HlslProgram
 {
     static void CompileShader(string const& file, LPCSTR entry, LPCSTR target, ComPtr<ID3DBlob>& sourceBlob);
 
-    void create(ComPtr<ID3D11Device>& device, char const* name);
+    void create(ComPtr<ID3D11Device>& device, const char* debugName, char const* vertName, const char* fragName = nullptr);
 
     void set(ComPtr<ID3D11DeviceContext>& deviceContext);
 

@@ -40,12 +40,12 @@ namespace pbr { namespace d3d11 {
         }
     }
 
-    void HlslProgram::create(ComPtr<ID3D11Device>& device, char const* name)
+    void HlslProgram::create(ComPtr<ID3D11Device>& device, const char* debugName, char const* vertName, const char* fragName)
     {
         string path(HLSL_DIR);
-        string vertFile(name); vertFile.append(".vert.hlsl");
-        string pixelFile(name); pixelFile.append(".pixel.hlsl");
-        SHADER_COMPILING_START_INFO(name);
+        string vertFile(vertName); vertFile.append(".vert.hlsl");
+        string pixelFile(fragName == nullptr ? vertName : fragName); pixelFile.append(".pixel.hlsl");
+        SHADER_COMPILING_START_INFO(debugName);
         HlslProgram::CompileShader(path + vertFile, "vs_main", "vs_5_0", vertShaderBlob);
         HRESULT hr = device->CreateVertexShader(
             vertShaderBlob->GetBufferPointer(),
@@ -61,7 +61,7 @@ namespace pbr { namespace d3d11 {
             NULL,
             pixelShader.GetAddressOf());
         D3D_THROW_IF_FAILED(hr, "Failed to create pixel shader");
-        SHADER_COMPILING_END_INFO(name);
+        SHADER_COMPILING_END_INFO(debugName);
     }
 
     void HlslProgram::set(ComPtr<ID3D11DeviceContext>& deviceContext)
