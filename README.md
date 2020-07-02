@@ -2,6 +2,10 @@
 
 Physically Based Rendering with multiple Graphics APIs
 
+## TODO
+
+Generate BRDF LUT
+
 ## Graphics APIs
 
 API           | Implementation

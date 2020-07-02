@@ -76,7 +76,7 @@ float3 mix(float3 x, float3 y, float a)
     return (1.0 - a) * x + a * y;
 }
 
-static const float3 albedo = float3(0.5, 0.0, 0.0);
+static const float3 albedo = float3(0.5, 0.5, 0.5);
 static const float ao = 1.0;
 
 float4 ps_main(out_vs input) : SV_TARGET

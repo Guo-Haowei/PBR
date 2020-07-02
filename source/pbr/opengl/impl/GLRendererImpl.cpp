@@ -66,9 +66,13 @@ void GLRendererImpl::Render(const Camera& camera)
     // glBindTexture(GL_TEXTURE_CUBE_MAP, m_prefilteredTexture.handle);
     glBindTexture(GL_TEXTURE_CUBE_MAP, m_cubeMapTexture.handle);
 
+    // glActiveTexture(GL_TEXTURE2); // brdf
+    // glBindTexture(GL_TEXTURE_2D, m_brdfLUTTexture.handle);
+
     // draw spheres
     m_pbrProgram.use();
     m_pbrProgram.setUniform("u_irradiance_map", 0);
+    // m_pbrProgram.setUniform("u_brdf_lut", 2);
     if (camera.IsDirty())
     {
         m_pbrProgram.setUniform("u_per_frame.view", camera.ViewMatrix());
@@ -125,7 +129,6 @@ void GLRendererImpl::PrepareGpuResources()
     createCubeMap();
     createIrradianceMap();
     createPrefilteredMap();
-    // create an irradiance cubemap, and solve diffuse integral by convolution to create an irradiance cube map
 }
 
 void GLRendererImpl::createFramebuffer()

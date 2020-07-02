@@ -27,6 +27,7 @@ uniform vec4 u_view_pos;
 
 /// IBL
 uniform samplerCube u_irradiance_map;
+uniform sampler2D u_brdf_lut;
 
 // NDF(n, h, alpha) = alpha^2 / (pi * ((n dot h)^2 * (alpha^2 - 1) + 1)^2)
 float DistributionGGX(in vec3 N, in vec3 H, float roughness)
@@ -70,7 +71,7 @@ vec3 FresnelSchlick(float cosTheta, in vec3 F0)
     return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
-const vec3 albedo = vec3(0.5, 0.0, 0.0);
+const vec3 albedo = vec3(0.5, 0.5, 0.5);
 const float ao = 1.0;
 
 void main()

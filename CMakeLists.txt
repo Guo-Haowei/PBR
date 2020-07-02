@@ -42,7 +42,6 @@ ENDIF ()
 
 SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-
 MESSAGE ("************************************* Variables **********************************")
 MESSAGE ("Platform:")
 MESSAGE (STATUS "Target platform:               ${TARGET_PLATFORM}")
@@ -77,3 +76,7 @@ IF (BUILD_GLM)
 ENDIF ()
 
 ADD_SUBDIRECTORY(source)
+
+IF (WIN32)
+    ADD_SUBDIRECTORY(tool)
+ENDIF ()

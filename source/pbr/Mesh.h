@@ -27,13 +27,13 @@ struct Mesh
     vector<uvec3>  indices;
 };
 
-struct Cube
+struct VertexOnlyMesh
 {
     vector<vec3> vertices;
     vector<uvec3>  indices;
 };
 
-extern Cube CreateCubeMesh(float scale = 1.0f);
+extern VertexOnlyMesh CreateCubeMesh(float scale = 1.0f);
 
 extern Mesh CreateSphereMesh(float radius = 1.0f, uint32_t widthSegment = 32, uint32_t heightSegment = 32);
 

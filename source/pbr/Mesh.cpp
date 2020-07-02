@@ -2,9 +2,9 @@
 
 namespace pbr {
 
-Cube CreateCubeMesh(float scale)
+VertexOnlyMesh CreateCubeMesh(float scale)
 {
-    Cube cube;
+    VertexOnlyMesh cube;
     /**
      *        E__________________ H
      *       /|                 /|
