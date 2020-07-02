@@ -53,29 +53,13 @@ void GLRendererImpl::DumpGraphicsCardInfo()
 
 void GLRendererImpl::Render(const Camera& camera)
 {
-    // TODO: bind textures for only one time
     // set viewport
     const Extent2i& extent = m_pWindow->GetFrameBufferExtent();
     glViewport(0, 0, extent.width, extent.height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glActiveTexture(GL_TEXTURE0); // irradiance
-    glBindTexture(GL_TEXTURE_CUBE_MAP, m_irradianceTexture.handle);
-
-    glActiveTexture(GL_TEXTURE1); // prefiltered texture
-    glBindTexture(GL_TEXTURE_CUBE_MAP, m_prefilteredTexture.handle);
-
-    glActiveTexture(GL_TEXTURE2); // brdf
-    glBindTexture(GL_TEXTURE_2D, m_brdfLUTTexture.handle);
-
-    glActiveTexture(GL_TEXTURE3); // background
-    glBindTexture(GL_TEXTURE_CUBE_MAP, m_cubeMapTexture.handle);
-
     // draw spheres
     m_pbrProgram.use();
-    m_pbrProgram.setUniform("u_irradiance_map", 0);
-    m_pbrProgram.setUniform("u_prefiltered_map", 1);
-    m_pbrProgram.setUniform("u_brdf_lut", 2);
     if (camera.IsDirty())
     {
         m_pbrProgram.setUniform("u_per_frame.view", camera.ViewMatrix());
@@ -93,8 +77,6 @@ void GLRendererImpl::Render(const Camera& camera)
         m_backgroundProgram.setUniform("u_per_frame.view", camera.ViewMatrix());
         m_backgroundProgram.setUniform("u_per_frame.projection", camera.ProjectionMatrixGl());
     }
-
-    m_backgroundProgram.setUniform("u_env_map", 3);
 
     glBindVertexArray(m_cube.vao);
     glDrawElements(GL_TRIANGLES, m_cube.indexCount, GL_UNSIGNED_INT, 0);
@@ -136,6 +118,9 @@ void GLRendererImpl::PrepareGpuResources()
     createCubeMap();
     createIrradianceMap();
     createPrefilteredMap();
+
+    // upload constant buffers
+    uploadConstantUniforms();
 }
 
 void GLRendererImpl::createFramebuffer()
@@ -315,9 +300,6 @@ void GLRendererImpl::compileShaders()
 #endif
         createShaderProgram(m_backgroundProgram, vertSource, fragSource, "Background Program");
     }
-
-    // upload constant buffers
-    uploadConstantUniforms();
 }
 
 void GLRendererImpl::createGeometries()
@@ -367,6 +349,7 @@ void GLRendererImpl::clearGeometries()
 void GLRendererImpl::uploadConstantUniforms()
 {
     m_pbrProgram.use();
+    // lighting
     for (size_t i = 0; i < g_lights.size(); ++i)
     {
         const string light = "u_lights[" + std::to_string(i) + "].";
@@ -374,8 +357,25 @@ void GLRendererImpl::uploadConstantUniforms()
         m_pbrProgram.setUniform(light + "color", g_lights[i].color);
     }
 
-    m_convertProgram.use();
-    m_convertProgram.setUniform("u_env_map", 0);
+    // textures
+    m_pbrProgram.setUniform("u_irradiance_map", 0);
+    m_pbrProgram.setUniform("u_prefiltered_map", 1);
+    m_pbrProgram.setUniform("u_brdf_lut", 2);
+
+    m_backgroundProgram.use();
+    m_backgroundProgram.setUniform("u_env_map", 3);
+
+    glActiveTexture(GL_TEXTURE0); // irradiance
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_irradianceTexture.handle);
+
+    glActiveTexture(GL_TEXTURE1); // prefiltered texture
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_prefilteredTexture.handle);
+
+    glActiveTexture(GL_TEXTURE2); // brdf
+    glBindTexture(GL_TEXTURE_2D, m_brdfLUTTexture.handle);
+
+    glActiveTexture(GL_TEXTURE3); // background
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_cubeMapTexture.handle);
 }
 
 } } // namespace pbr::gl
