@@ -4,21 +4,29 @@
 
 namespace pbr { namespace gl {
 
-GLTexture CreateHDRTexture(const Image& image)
+GLTexture CreateTexture(const Image& image, GLenum internalFormat)
 {
     GLenum imageFormat;
     switch (image.component)
     {
         case 4: imageFormat = GL_RGBA; break;
         case 3: imageFormat = GL_RGB; break;
+        case 2: imageFormat = GL_RG; break;
         default:
             THROW_EXCEPTION("[texture] Unsupported image format, image has component " + std::to_string(image.component));
+    }
+    GLenum dataType;
+    switch (image.dataType)
+    {
+        case DataType::FLOAT_32T: dataType = GL_FLOAT; break;
+        default:
+            THROW_EXCEPTION("[texture] Unsupported image format, image invalid data type");
     }
     GLTexture texture;
     texture.type = GL_TEXTURE_2D;
     glGenTextures(1, &texture.handle);
     glBindTexture(texture.type, texture.handle);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, image.width, image.height, 0, imageFormat, GL_FLOAT, image.buffer.pData);
+    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, image.width, image.height, 0, imageFormat, dataType, image.buffer.pData);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);

@@ -53,6 +53,7 @@ void GLRendererImpl::DumpGraphicsCardInfo()
 
 void GLRendererImpl::Render(const Camera& camera)
 {
+    // TODO: bind textures for only one time
     // set viewport
     const Extent2i& extent = m_pWindow->GetFrameBufferExtent();
     glViewport(0, 0, extent.width, extent.height);
@@ -61,18 +62,20 @@ void GLRendererImpl::Render(const Camera& camera)
     glActiveTexture(GL_TEXTURE0); // irradiance
     glBindTexture(GL_TEXTURE_CUBE_MAP, m_irradianceTexture.handle);
 
-    glActiveTexture(GL_TEXTURE1); // background
-    // glBindTexture(GL_TEXTURE_CUBE_MAP, m_irradianceTexture.handle);
-    // glBindTexture(GL_TEXTURE_CUBE_MAP, m_prefilteredTexture.handle);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, m_cubeMapTexture.handle);
+    glActiveTexture(GL_TEXTURE1); // prefiltered texture
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_prefilteredTexture.handle);
 
-    // glActiveTexture(GL_TEXTURE2); // brdf
-    // glBindTexture(GL_TEXTURE_2D, m_brdfLUTTexture.handle);
+    glActiveTexture(GL_TEXTURE2); // brdf
+    glBindTexture(GL_TEXTURE_2D, m_brdfLUTTexture.handle);
+
+    glActiveTexture(GL_TEXTURE3); // background
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_cubeMapTexture.handle);
 
     // draw spheres
     m_pbrProgram.use();
     m_pbrProgram.setUniform("u_irradiance_map", 0);
-    // m_pbrProgram.setUniform("u_brdf_lut", 2);
+    m_pbrProgram.setUniform("u_prefiltered_map", 1);
+    m_pbrProgram.setUniform("u_brdf_lut", 2);
     if (camera.IsDirty())
     {
         m_pbrProgram.setUniform("u_per_frame.view", camera.ViewMatrix());
@@ -80,7 +83,7 @@ void GLRendererImpl::Render(const Camera& camera)
         m_pbrProgram.setUniform("u_view_pos", camera.GetViewPos());
     }
     glBindVertexArray(m_sphere.vao);
-    const int size = 7;
+    const int size = 5;
     glDrawElementsInstanced(GL_TRIANGLES, m_sphere.indexCount, GL_UNSIGNED_INT, 0, size * size);
 
     // draw cube map
@@ -91,7 +94,7 @@ void GLRendererImpl::Render(const Camera& camera)
         m_backgroundProgram.setUniform("u_per_frame.projection", camera.ProjectionMatrixGl());
     }
 
-    m_backgroundProgram.setUniform("u_env_map", 1);
+    m_backgroundProgram.setUniform("u_env_map", 3);
 
     glBindVertexArray(m_cube.vao);
     glDrawElements(GL_TRIANGLES, m_cube.indexCount, GL_UNSIGNED_INT, 0);
@@ -119,9 +122,13 @@ void GLRendererImpl::PrepareGpuResources()
     // glBindVertexArray(0);
 
     // load enviroment map
-    auto image = utility::ReadHDRImage(DEFAULT_HDR_ENV_MAP);
-    m_hdrTexture = CreateHDRTexture(image);
-    free(image.buffer.pData);
+    auto envImage = utility::ReadHDRImage(DEFAULT_HDR_ENV_MAP);
+    m_hdrTexture = CreateTexture(envImage, GL_RGB32F);
+    free(envImage.buffer.pData);
+    // load brdf LUT
+    auto brdfImage = utility::ReadBrdfLUT(BRDF_LUT, Renderer::brdfLUTImageRes);
+    m_brdfLUTTexture = CreateTexture(brdfImage, GL_RG16F);
+    free(brdfImage.buffer.pData);
 
     // convert HDR equirectuangular environment map to cubemap equivalent
     calculateCubemapMatrices();
@@ -151,7 +158,7 @@ void GLRendererImpl::createCubeMap()
     m_convertProgram.setUniform("u_env_map", 0);
     m_convertProgram.setUniform("u_per_frame.projection", m_cubeMapPerspective);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, m_cubeMapTexture.handle);
+    glBindTexture(GL_TEXTURE_2D, m_hdrTexture.handle);
 
     glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer.fbo);
     glBindRenderbuffer(GL_RENDERBUFFER, m_framebuffer.rbo);

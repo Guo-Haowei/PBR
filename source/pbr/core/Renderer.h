@@ -14,6 +14,7 @@ public:
     static constexpr int irradianceMapRes       { 32 };
     static constexpr int prefilteredMaxMipLevel { 5 };
     static constexpr int prefilteredMapRes      { 512 };
+    static constexpr int brdfLUTImageRes        { 512 };
 
     static Renderer* CreateRenderer(const Window* pWindow);
     virtual void Initialize() = 0;

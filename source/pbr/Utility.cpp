@@ -61,6 +61,28 @@ Image ReadHDRImage(const char* path)
     return image;
 }
 
+Image ReadBrdfLUT(const char* path, int size)
+{
+    ifstream bin(path, ios::out | ios::binary);
+    if (!bin.is_open())
+        THROW_EXCEPTION("filesystem: Failed to open image '" + string(path) + "'");
+    const int sizeInByte = sizeof(float) * 2 * size * size;
+    float* buffer = reinterpret_cast<float*>(malloc(sizeInByte));
+    bin.read(reinterpret_cast<char*>(buffer), sizeInByte);
+    Image image;
+    image.component = 2;
+    image.buffer.pData = buffer;
+    image.buffer.sizeInByte = sizeInByte;
+    image.dataType = DataType::FLOAT_32T;
+    image.width = image.height = size;
+    return image;
+}
+
+Image ReadBrdfLUT(const string& path, int size)
+{
+    return ReadBrdfLUT(path.c_str(), size);
+}
+
 bool IsNaN(const mat4& m)
 {
     const float* p = &m[0].x;

@@ -8,5 +8,7 @@ namespace pbr { namespace utility {
     extern vector<char> ReadBinaryFile(const string& path);
     extern Image ReadHDRImage(const char* path);
     extern Image ReadHDRImage(const string& path);
+    extern Image ReadBrdfLUT(const char* path, int size);
+    extern Image ReadBrdfLUT(const string& path, int size);
     extern bool IsNaN(const mat4& m);
 } } // namespace pbr::utility

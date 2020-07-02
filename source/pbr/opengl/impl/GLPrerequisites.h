@@ -18,3 +18,5 @@
 #else
 #   define DEFAULT_HDR_ENV_MAP DATA_DIR "hdr/circus.hdr"
 #endif
+
+#define BRDF_LUT DATA_DIR "preload/brdf.bin"

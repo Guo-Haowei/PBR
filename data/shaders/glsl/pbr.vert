@@ -31,7 +31,7 @@ uniform PerDrawBuffer u_per_draw;
 void main()
 {
     float spacing = 2.5;
-    int count = 7;
+    int count = 5;
     int ix = gl_InstanceID % count;
     int iy = gl_InstanceID / count;
     vs_pass.metallic = clamp(float(iy) / float(count), 0.05, 0.95);

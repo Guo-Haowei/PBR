@@ -37,10 +37,10 @@ private:
     PerDrawData     m_sphere;
     PerDrawData     m_cube;
     GLTexture       m_hdrTexture;
+    GLTexture       m_brdfLUTTexture;
     GLTexture       m_cubeMapTexture;
     GLTexture       m_irradianceTexture;
     GLTexture       m_prefilteredTexture;
-    GLTexture       m_brdfLUTTexture;
     GLFramebuffer   m_framebuffer;
 
     mat4            m_cubeMapPerspective;

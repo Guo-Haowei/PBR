@@ -27,6 +27,7 @@ uniform vec4 u_view_pos;
 
 /// IBL
 uniform samplerCube u_irradiance_map;
+uniform samplerCube u_prefiltered_map;
 uniform sampler2D u_brdf_lut;
 
 // NDF(n, h, alpha) = alpha^2 / (pi * ((n dot h)^2 * (alpha^2 - 1) + 1)^2)
@@ -71,6 +72,11 @@ vec3 FresnelSchlick(float cosTheta, in vec3 F0)
     return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
+vec3 FresnelSchlickRoughness(float cosTheta, in vec3 F0, float roughness)
+{
+    return F0 + (max(vec3(1.0 - roughness) - F0, vec3(0.0))) * pow(1.0 - cosTheta, 5.0);
+}
+
 const vec3 albedo = vec3(0.5, 0.5, 0.5);
 const float ao = 1.0;
 
@@ -83,6 +89,7 @@ void main()
 
     vec3 N = normalize(vs_pass.normal);
     vec3 V = normalize(u_view_pos.xyz - position);
+    vec3 R = reflect(-V, N);
 
     // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0
     // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)
@@ -126,12 +133,23 @@ void main()
     }
 
     // image based ambient lighting
-    vec3 kS = FresnelSchlick(max(dot(N, V), 0.0), F0);
+    vec3 F = FresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
+    vec3 kS = F;
     vec3 kD = 1.0 - kS;
     kD *= 1.0 - metallic;
     vec3 irradiance = texture(u_irradiance_map, N).rgb;
     vec3 diffuse = irradiance * albedo;
-    vec3 ambient = (kD * diffuse) * ao;
+
+    // sample both pre-filtered map and BRDF lut and combine then together
+    const float MAX_REFLECTION_LOD = 4.0;
+    vec3 prefilteredColor = textureLod(u_prefiltered_map, R, roughness * MAX_REFLECTION_LOD).rgb;
+    float reflectPower = max(dot(N, V), 0.0);
+    // vec2 brdfUV = vec2(reflectPower, 1.0 - roughness); // flip y
+    vec2 brdfUV = vec2(reflectPower, roughness);
+    vec2 brdf = texture(u_brdf_lut, brdfUV).rg;
+    vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+
+    vec3 ambient = (kD * diffuse + specular) * ao;
 
     vec3 color = ambient + Lo;
     // HDR tonemapping
