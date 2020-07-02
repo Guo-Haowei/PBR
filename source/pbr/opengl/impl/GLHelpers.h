@@ -26,7 +26,7 @@ namespace pbr { namespace gl {
 
     extern GLTexture CreateHDRTexture(const Image& image);
 
-    extern GLTexture CreateEmptyCubeMap(int size);
+    extern GLTexture CreateEmptyCubeMap(int size, int mipmap = 0);
 
     class GlslProgram
     {

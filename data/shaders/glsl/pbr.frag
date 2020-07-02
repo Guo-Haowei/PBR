@@ -40,7 +40,6 @@ float DistributionGGX(in vec3 N, in vec3 H, float roughness)
     // if roughness = 0, NDF = 0,
     // if roughness = 1, NDF = 1 / pi
     return nom / denom;
-    // return nom / max(denom, 0.001); // prevent divide by zero for roughness = 0.0 and NdotH = 1.0
 }
 
 // G_SchlickGGX(n, v, k) = dot(n, v) / (dot(n, v)(1 - k) + k)

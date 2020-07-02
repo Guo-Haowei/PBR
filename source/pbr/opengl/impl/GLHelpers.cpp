@@ -27,7 +27,7 @@ GLTexture CreateHDRTexture(const Image& image)
     return texture;
 }
 
-GLTexture CreateEmptyCubeMap(int size)
+GLTexture CreateEmptyCubeMap(int size, int mipmap)
 {
     GLTexture cubeTexture;
     cubeTexture.type = GL_TEXTURE_CUBE_MAP;
@@ -36,8 +36,9 @@ GLTexture CreateEmptyCubeMap(int size)
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER,
+        mipmap > 0 ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
 
     for (int i = 0; i < 6; ++i)
     {
@@ -47,6 +48,9 @@ GLTexture CreateEmptyCubeMap(int size)
         glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB32F, size, size, 0, GL_RGB, GL_FLOAT, 0);
 #endif
     }
+
+    if (mipmap)
+        glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
 
     return cubeTexture;
 }

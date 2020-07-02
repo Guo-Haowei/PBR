@@ -50,8 +50,9 @@ for obj in glsl_files:
     outfile.write(variable_name)
     outfile.write(' =\n')
     for line in lines:
-        if line == '':
-            continue
+        # if line == '':
+        #     continue
+        ## by keeping the blank line, it's easier to debug shader error
         outfile.write('\t"')
         outfile.write(line)
         outfile.write('\\n"')

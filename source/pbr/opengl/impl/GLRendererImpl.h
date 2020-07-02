@@ -24,19 +24,26 @@ private:
     void clearGeometries();
     void createCubeMap();
     void createIrradianceMap();
+    void createPrefilteredMap();
+    void calculateCubemapMatrices();
     void createShaderProgram(GlslProgram& program, string const& vertSource, string const& fragSource, char const* debugName);
 private:
     const Window*   m_pWindow;
     GlslProgram     m_pbrProgram;
     GlslProgram     m_convertProgram;
     GlslProgram     m_irradianceProgram;
+    GlslProgram     m_prefilterProgram;
     GlslProgram     m_backgroundProgram;
     PerDrawData     m_sphere;
     PerDrawData     m_cube;
     GLTexture       m_hdrTexture;
     GLTexture       m_cubeMapTexture;
     GLTexture       m_irradianceTexture;
+    GLTexture       m_prefilteredTexture;
     GLFramebuffer   m_framebuffer;
+
+    mat4            m_cubeMapPerspective;
+    array<mat4, 6>  m_cubeMapViews;
 };
 
 } } // namespace pbr::gl
