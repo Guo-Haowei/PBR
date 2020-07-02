@@ -58,13 +58,13 @@ void GLRendererImpl::Render(const Camera& camera)
     glViewport(0, 0, extent.width, extent.height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glActiveTexture(GL_TEXTURE0);
+    glActiveTexture(GL_TEXTURE0); // irradiance
     glBindTexture(GL_TEXTURE_CUBE_MAP, m_irradianceTexture.handle);
 
-    glActiveTexture(GL_TEXTURE1);
+    glActiveTexture(GL_TEXTURE1); // background
     // glBindTexture(GL_TEXTURE_CUBE_MAP, m_irradianceTexture.handle);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, m_prefilteredTexture.handle);
-    // glBindTexture(GL_TEXTURE_CUBE_MAP, m_cubeMapTexture.handle);
+    // glBindTexture(GL_TEXTURE_CUBE_MAP, m_prefilteredTexture.handle);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_cubeMapTexture.handle);
 
     // draw spheres
     m_pbrProgram.use();

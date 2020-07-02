@@ -16,5 +16,5 @@
 #if TARGET_PLATFORM == PLATFORM_EMSCRIPTEN
 #   define DEFAULT_HDR_ENV_MAP DATA_DIR "preload/ballroom.hdr"
 #else
-#   define DEFAULT_HDR_ENV_MAP DATA_DIR "hdr/lythwood_room_2k.hdr"
+#   define DEFAULT_HDR_ENV_MAP DATA_DIR "hdr/circus.hdr"
 #endif
