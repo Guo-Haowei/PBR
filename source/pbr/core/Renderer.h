@@ -12,7 +12,7 @@ class Renderer
 public:
     static constexpr int cubeMapRes             { 512 };
     static constexpr int irradianceMapRes       { 32 };
-    static constexpr int specularMapMipLevels   { 5 };
+    static constexpr int specularMapMipLevels   { 7 };
     static constexpr int specularMapRes         { 512 };
     static constexpr int brdfLUTImageRes        { 512 };
 

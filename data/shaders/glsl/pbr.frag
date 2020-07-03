@@ -144,7 +144,7 @@ void main()
     const float MAX_REFLECTION_LOD = 4.0;
     vec3 prefilteredColor = textureLod(u_specular_map, R, roughness * MAX_REFLECTION_LOD).rgb;
     float reflectPower = max(dot(N, V), 0.0);
-    vec2 brdfUV = vec2(reflectPower, roughness);
+    vec2 brdfUV = vec2(reflectPower, 1.0 - roughness); // flip
     vec2 brdf = texture(u_brdf_lut, brdfUV).rg;
     vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);
 

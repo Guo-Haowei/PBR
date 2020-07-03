@@ -153,8 +153,7 @@ float4 ps_main(out_vs input) : SV_TARGET
     float3 prefilteredColor = specularMap.SampleLevel(g_samplerLod, R, roughness * MAX_REFLECTION_LOD).rgb;
     float reflectPower = max(dot(N, V), 0.0);
 
-    // float2 brdfUV = float2(reflectPower, 1.0 - roughness); // flip y
-    float2 brdfUV = float2(reflectPower, roughness);
+    float2 brdfUV = float2(reflectPower, 1.0 - roughness);
     float2 brdf = brdfLut.Sample(g_sampler, brdfUV).rg;
     float3 specular = prefilteredColor * (F * brdf.x + brdf.y);
 

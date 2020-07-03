@@ -57,6 +57,16 @@ void D3d11RendererImpl::renderCube()
     m_deviceContext->DrawIndexed(m_cube.indexCount, 0, 0);
 }
 
+void D3d11RendererImpl::setSrvAndSamplers()
+{
+    m_deviceContext->PSSetShaderResources(0, 1, m_brdfLUTSrv.GetAddressOf());
+    m_deviceContext->PSSetShaderResources(1, 1, m_specularMap.srv.GetAddressOf());
+    m_deviceContext->PSSetShaderResources(2, 1, m_irradianceMap.srv.GetAddressOf());
+    m_deviceContext->PSSetShaderResources(3, 1, m_environmentMap.srv.GetAddressOf());
+    m_deviceContext->PSSetSamplers(0, 1, m_sampler.GetAddressOf());
+    m_deviceContext->PSSetSamplers(1, 1, m_samplerLod.GetAddressOf());
+}
+
 void D3d11RendererImpl::Render(const Camera& camera)
 {
     // set render target
@@ -254,6 +264,7 @@ void D3d11RendererImpl::PrepareGpuResources()
     renderToSpecularMap();
 
     uploadConstantBuffer();
+    setSrvAndSamplers();
 }
 
 void D3d11RendererImpl::createSampler()

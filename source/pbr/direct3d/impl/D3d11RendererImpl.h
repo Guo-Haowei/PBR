@@ -32,6 +32,7 @@ private:
     void calculateCubemapMatrices();
     void uploadConstantBuffer();
     void createSampler();
+    void setSrvAndSamplers();
     void createTexture2D(ComPtr<ID3D11ShaderResourceView>& srv, const Image& image, DXGI_FORMAT internalFormat);
 private:
     const Window*                       m_pWindow;

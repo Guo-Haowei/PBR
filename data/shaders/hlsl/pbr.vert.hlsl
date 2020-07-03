@@ -31,8 +31,8 @@ out_vs vs_main(in_vs input, uint id : SV_InstanceID)
     int count = 5;
     int ix = id % count;
     int iy = id / count;
-    output.normal.w = clamp(float(ix) / float(count), 0.05, 0.95); // roughness
-    output.position.w = clamp(float(iy) / float(count), 0.05, 0.95); // metallic
+    output.normal.w = clamp(float(ix) / float(count), 0.1, 0.9); // roughness
+    output.position.w = clamp(float(iy) / float(count), 0.1, 0.9); // metallic
     float x = spacing * (float(ix - count / 2));
     float y = spacing * (float(iy - count / 2));
     float3 offset = float3(x, y, 0.0);

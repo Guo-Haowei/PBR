@@ -34,8 +34,8 @@ void main()
     int count = 5;
     int ix = gl_InstanceID % count;
     int iy = gl_InstanceID / count;
-    vs_pass.metallic = clamp(float(iy) / float(count), 0.05, 0.95);
-    vs_pass.roughness = clamp(float(ix) / float(count), 0.05, 0.95);
+    vs_pass.metallic = clamp(float(iy) / float(count), 0.1, 0.9);
+    vs_pass.roughness = clamp(float(ix) / float(count), 0.1, 0.9);
     float x = spacing * (float(ix - count / 2));
     float y = spacing * (float(iy - count / 2));
     vec3 offset = vec3(x, y, 0.0);
