@@ -201,7 +201,7 @@ void GLRendererImpl::createIrradianceMap()
 
 void GLRendererImpl::createPrefilteredMap()
 {
-    m_prefilteredTexture = CreateEmptyCubeMap(Renderer::prefilteredMapRes, Renderer::prefilteredMaxMipLevel);
+    m_specularTexture = CreateEmptyCubeMap(Renderer::specularMapRes, Renderer::specularMapMipLevels);
     m_prefilterProgram.use();
     m_prefilterProgram.setUniform("u_env_map", 0);
     m_prefilterProgram.setUniform("u_per_frame.projection", m_cubeMapPerspective);
@@ -210,19 +210,19 @@ void GLRendererImpl::createPrefilteredMap()
 
     glBindFramebuffer(GL_FRAMEBUFFER, m_framebuffer.fbo);
 
-    unsigned int mipSize = Renderer::prefilteredMapRes;
-    for (int mipLevel = 0; mipLevel < Renderer::prefilteredMaxMipLevel; ++mipLevel, mipSize = mipSize >> 1)
+    unsigned int mipSize = Renderer::specularMapRes;
+    for (int mipLevel = 0; mipLevel < Renderer::specularMapMipLevels; ++mipLevel, mipSize = mipSize >> 1)
     {
         glBindRenderbuffer(GL_RENDERBUFFER, m_framebuffer.rbo);
         glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, mipSize, mipSize);
         glViewport(0, 0, mipSize, mipSize);
 
-        float roughness = float(mipLevel) / float(Renderer::prefilteredMaxMipLevel - 1.0f);
+        float roughness = float(mipLevel) / float(Renderer::specularMapMipLevels - 1.0f);
         m_prefilterProgram.setUniform("u_roughness", roughness);
         for (int i = 0; i < 6; ++i)
         {
             m_prefilterProgram.setUniform("u_per_frame.view", m_cubeMapViews[i]);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, m_prefilteredTexture.handle, mipLevel);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, m_specularTexture.handle, mipLevel);
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glBindVertexArray(m_cube.vao);
@@ -359,7 +359,7 @@ void GLRendererImpl::uploadConstantUniforms()
 
     // textures
     m_pbrProgram.setUniform("u_irradiance_map", 0);
-    m_pbrProgram.setUniform("u_prefiltered_map", 1);
+    m_pbrProgram.setUniform("u_specular_map", 1);
     m_pbrProgram.setUniform("u_brdf_lut", 2);
 
     m_backgroundProgram.use();
@@ -369,7 +369,7 @@ void GLRendererImpl::uploadConstantUniforms()
     glBindTexture(GL_TEXTURE_CUBE_MAP, m_irradianceTexture.handle);
 
     glActiveTexture(GL_TEXTURE1); // prefiltered texture
-    glBindTexture(GL_TEXTURE_CUBE_MAP, m_prefilteredTexture.handle);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, m_specularTexture.handle);
 
     glActiveTexture(GL_TEXTURE2); // brdf
     glBindTexture(GL_TEXTURE_2D, m_brdfLUTTexture.handle);

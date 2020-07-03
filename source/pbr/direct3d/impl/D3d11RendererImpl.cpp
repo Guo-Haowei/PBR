@@ -25,8 +25,6 @@ void D3d11RendererImpl::Initialize()
     createDevice();
     createSwapchain();
     createImmediateRenderTarget(m_pWindow->GetFrameBufferExtent());
-    createCubeMapRenderTarget(Renderer::cubeMapRes, m_environment);
-    createCubeMapRenderTarget(Renderer::irradianceMapRes, m_irradiance);
 }
 
 void D3d11RendererImpl::Finalize()
@@ -64,7 +62,8 @@ void D3d11RendererImpl::Render(const Camera& camera)
     // set render target
     m_deviceContext->OMSetRenderTargets(1, m_immediate.rtv.GetAddressOf(), m_immediate.dsv.Get());
     // set viewport
-    setViewport(m_pWindow->GetFrameBufferExtent());
+    const Extent2i extent = m_pWindow->GetFrameBufferExtent();
+    setViewport(extent.width, extent.height);
     // clear
     m_deviceContext->ClearRenderTargetView(m_immediate.rtv.Get(), clearColor);
     m_deviceContext->ClearDepthStencilView(m_immediate.dsv.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
@@ -84,8 +83,7 @@ void D3d11RendererImpl::Render(const Camera& camera)
 
     // render spheres
     m_pbrProgram.set(m_deviceContext);
-    m_deviceContext->PSSetShaderResources(0, 1, m_irradiance.srv.GetAddressOf());
-    // m_deviceContext->PSSetShaderResources(0, 1, m_environment.srv.GetAddressOf());
+    m_deviceContext->PSSetShaderResources(0, 1, m_irradianceMap.srv.GetAddressOf());
     m_deviceContext->PSSetSamplers(0, 1, m_hdrTexture->m_sampler.GetAddressOf());
 
     if (camera.IsDirty())
@@ -98,13 +96,16 @@ void D3d11RendererImpl::Render(const Camera& camera)
 
     // render background
     m_backgroundProgram.set(m_deviceContext);
-    m_deviceContext->PSSetShaderResources(0, 1, m_environment.srv.GetAddressOf());
+    // m_deviceContext->PSSetShaderResources(0, 1, m_irradianceMap.srv.GetAddressOf());
+    // m_deviceContext->PSSetShaderResources(0, 1, m_environmentMap.srv.GetAddressOf());
+    m_deviceContext->PSSetShaderResources(0, 1, m_specularMap.srv.GetAddressOf());
     m_deviceContext->PSSetSamplers(0, 1, m_hdrTexture->m_sampler.GetAddressOf());
     if (camera.IsDirty())
     {
         m_perFrameBuffer.VSSet(m_deviceContext, 1);
         m_viewPositionBuffer.PSSet(m_deviceContext, 1);
     }
+
     renderCube();
 
     // present
@@ -112,12 +113,12 @@ void D3d11RendererImpl::Render(const Camera& camera)
     // m_swapChain->Present(0, 0);
 }
 
-void D3d11RendererImpl::setViewport(const Extent2i& extent)
+void D3d11RendererImpl::setViewport(int width, int height)
 {
     D3D11_VIEWPORT viewport;
     ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
-    viewport.Width = static_cast<float>(extent.width);
-    viewport.Height = static_cast<float>(extent.height);
+    viewport.Width = static_cast<float>(width);
+    viewport.Height = static_cast<float>(height < 0 ? width : height);
     viewport.MinDepth = 0.0f;
     viewport.MaxDepth = 1.0f;
     m_deviceContext->RSSetViewports(1, &viewport);
@@ -208,10 +209,6 @@ void D3d11RendererImpl::PrepareGpuResources()
     m_perDrawBuffer.Create(m_device);
     m_lightBuffer.Create(m_device);
     m_viewPositionBuffer.Create(m_device);
-    memcpy(&m_lightBuffer.m_cache, &g_lights, m_lightBuffer.BufferSize());
-    m_deviceContext->PSSetShader(m_pbrProgram.pixelShader.Get(), 0, 0);
-    m_lightBuffer.PSSet(m_deviceContext, 0);
-    m_lightBuffer.Update(m_deviceContext);
 
     // rasterizer
     {
@@ -239,10 +236,25 @@ void D3d11RendererImpl::PrepareGpuResources()
 
     m_deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     // render environment map only once
+    calculateCubemapMatrices();
+    createCubemap(m_environmentMap, Renderer::cubeMapRes);
     renderToEnvironmentMap();
     // FIXME: environment map will not be ready if only render once
+    createCubemap(m_irradianceMap, Renderer::irradianceMapRes);
     renderToIrradianceMap();
     renderToIrradianceMap();
+    createCubemap(m_specularMap, Renderer::specularMapRes, Renderer::specularMapMipLevels);
+    renderToSpecularMap();
+
+    uploadConstantBuffer();
+}
+
+void D3d11RendererImpl::uploadConstantBuffer()
+{
+    memcpy(&m_lightBuffer.m_cache, &g_lights, m_lightBuffer.BufferSize());
+    m_deviceContext->PSSetShader(m_pbrProgram.pixelShader.Get(), 0, 0);
+    m_lightBuffer.PSSet(m_deviceContext, 0);
+    m_lightBuffer.Update(m_deviceContext);
 }
 
 void D3d11RendererImpl::Resize(const Extent2i& extent)
@@ -277,12 +289,11 @@ void D3d11RendererImpl::createImmediateRenderTarget(const Extent2i& extent)
         "Failed to create depth stencil view");
 }
 
-void D3d11RendererImpl::createCubeMapRenderTarget(int res, CubeMapRenderTarget& target)
+void D3d11RendererImpl::createCubemap(CubemapTexture& target, int res, int mipLevels)
 {
     D3D11_TEXTURE2D_DESC textureDesc {};
-    textureDesc.Width = res;
-    textureDesc.Height = res;
-    textureDesc.MipLevels = 1;
+    textureDesc.Width = textureDesc.Height = res;
+    textureDesc.MipLevels = mipLevels;
     textureDesc.ArraySize = 6;
     textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
     textureDesc.SampleDesc.Count = 1;
@@ -294,99 +305,139 @@ void D3d11RendererImpl::createCubeMapRenderTarget(int res, CubeMapRenderTarget& 
     D3D_THROW_IF_FAILED(m_device->CreateTexture2D(&textureDesc, NULL, target.cubeBuffer.GetAddressOf()),
         "Failed to create cube buffer");
 
-    D3D11_TEXTURE2D_DESC depthStencilDesc {};
-    depthStencilDesc.Width = res;
-    depthStencilDesc.Height = res;
-    depthStencilDesc.MipLevels = depthStencilDesc.ArraySize = 1;
-    depthStencilDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-    depthStencilDesc.SampleDesc.Count = 1;
-    depthStencilDesc.SampleDesc.Quality = 0;
-    depthStencilDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-
-    D3D_THROW_IF_FAILED(m_device->CreateTexture2D(&depthStencilDesc, 0, target.depthBuffer.GetAddressOf()),
-        "Failed to create depth buffer");
-
     D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc {};
     srvDesc.Format = textureDesc.Format;
     srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
-    srvDesc.TextureCube.MipLevels = 1;
+    srvDesc.TextureCube.MipLevels = mipLevels;
     D3D_THROW_IF_FAILED(m_device->CreateShaderResourceView(target.cubeBuffer.Get(), &srvDesc, target.srv.GetAddressOf()),
         "Failed to create shader resource view");
-
-    D3D11_RENDER_TARGET_VIEW_DESC rtvDesc {};
-    rtvDesc.Format = textureDesc.Format;
-    rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
-    rtvDesc.Texture2DArray.MipSlice = 0;
-    rtvDesc.Texture2DArray.ArraySize = 1;
-    for (int i = 0; i < 6; ++i)
-    {
-        rtvDesc.Texture2DArray.FirstArraySlice = D3D11CalcSubresource(0, i, 1);
-        D3D_THROW_IF_FAILED(m_device->CreateRenderTargetView(target.cubeBuffer.Get(), &rtvDesc, target.rtvs[i].GetAddressOf()),
-            "Failed to create render target view " + std::to_string(i));
-    }
-
-    D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc {};
-
-    D3D_THROW_IF_FAILED(m_device->CreateDepthStencilView(target.depthBuffer.Get(), nullptr, target.dsv.GetAddressOf()),
-        "Failed to create depth stencil view");
-
-}
-
-void D3d11RendererImpl::renderToIrradianceMap()
-{
-    // set viewport
-    setViewport({ Renderer::irradianceMapRes, Renderer::irradianceMapRes });
-
-    m_irradianceProgram.set(m_deviceContext);
-    m_deviceContext->PSSetShaderResources(1, 1, m_environment.srv.GetAddressOf());
-    m_deviceContext->PSSetSamplers(1, 1, m_hdrTexture->m_sampler.GetAddressOf());
-
-    CubeCamera camera(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
-    m_perFrameBuffer.m_cache.projection = camera.ProjectionMatrixD3d();
-    array<mat4, 6> viewMatrices;
-    camera.ViewMatricesD3d(viewMatrices);
-
-    for (int i = 0; i < 6; ++i)
-    {
-        m_deviceContext->OMSetRenderTargets(1, m_irradiance.rtvs[i].GetAddressOf(), m_irradiance.dsv.Get());
-        m_deviceContext->ClearRenderTargetView(m_irradiance.rtvs[i].Get(), clearColor);
-        m_deviceContext->ClearDepthStencilView(m_irradiance.dsv.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
-
-        // update shared constant buffer
-        m_perFrameBuffer.m_cache.view = viewMatrices[i];
-        m_perFrameBuffer.Update(m_deviceContext);
-        m_perFrameBuffer.VSSet(m_deviceContext, 1);
-        renderCube();
-    }
 }
 
 void D3d11RendererImpl::renderToEnvironmentMap()
 {
     // set viewport
-    setViewport({ Renderer::cubeMapRes, Renderer::cubeMapRes });
+    setViewport(Renderer::cubeMapRes);
 
     // set shader
     m_convertProgram.set(m_deviceContext);
     m_deviceContext->PSSetShaderResources(0, 1, m_hdrTexture->m_shaderResourceView.GetAddressOf());
     m_deviceContext->PSSetSamplers(0, 1, m_hdrTexture->m_sampler.GetAddressOf());
 
-    CubeCamera camera(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
-    m_perFrameBuffer.m_cache.projection = camera.ProjectionMatrixD3d();
-    array<mat4, 6> viewMatrices;
-    camera.ViewMatricesD3d(viewMatrices);
+    m_perFrameBuffer.m_cache.projection = m_cubeMapPerspective;
 
-    for (int i = 0; i < 6; ++i)
+    for (int face = 0; face < 6; ++face)
     {
-        m_deviceContext->OMSetRenderTargets(1, m_environment.rtvs[i].GetAddressOf(), m_environment.dsv.Get());
-        m_deviceContext->ClearRenderTargetView(m_environment.rtvs[i].Get(), clearColor);
-        m_deviceContext->ClearDepthStencilView(m_environment.dsv.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
+        // temporary render target view
+        ComPtr<ID3D11RenderTargetView> rtv;
+        D3D11_RENDER_TARGET_VIEW_DESC rtvDesc {};
+        rtvDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+        rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
+        rtvDesc.Texture2DArray.MipSlice = 0;
+        rtvDesc.Texture2DArray.ArraySize = 1;
+        rtvDesc.Texture2DArray.FirstArraySlice = face;
+        D3D_THROW_IF_FAILED(m_device->CreateRenderTargetView(m_environmentMap.cubeBuffer.Get(), &rtvDesc, rtv.GetAddressOf()),
+            "Failed to create render target view");
+
+        m_deviceContext->OMSetRenderTargets(1, rtv.GetAddressOf(), 0);
+        m_deviceContext->ClearRenderTargetView(rtv.Get(), clearColor);
 
         // update shared constant buffer
-        m_perFrameBuffer.m_cache.view = viewMatrices[i];
+        m_perFrameBuffer.m_cache.view = m_cubeMapViews[face];
         m_perFrameBuffer.Update(m_deviceContext);
         m_perFrameBuffer.VSSet(m_deviceContext, 1);
         renderCube();
     }
+}
+
+void D3d11RendererImpl::renderToIrradianceMap()
+{
+    // set viewport
+    setViewport(Renderer::irradianceMapRes);
+
+    m_irradianceProgram.set(m_deviceContext);
+    m_deviceContext->PSSetShaderResources(1, 1, m_environmentMap.srv.GetAddressOf());
+    // TODO: refactor sampler
+    m_deviceContext->PSSetSamplers(1, 1, m_hdrTexture->m_sampler.GetAddressOf());
+
+    m_perFrameBuffer.m_cache.projection = m_cubeMapPerspective;
+
+    for (int face = 0; face < 6; ++face)
+    {
+        // temporary render target view
+        ComPtr<ID3D11RenderTargetView> rtv;
+        D3D11_RENDER_TARGET_VIEW_DESC rtvDesc{};
+        rtvDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+        rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
+        rtvDesc.Texture2DArray.MipSlice = 0;
+        rtvDesc.Texture2DArray.ArraySize = 1;
+        rtvDesc.Texture2DArray.FirstArraySlice = D3D11CalcSubresource(0, face, 1);
+        D3D_THROW_IF_FAILED(m_device->CreateRenderTargetView(m_irradianceMap.cubeBuffer.Get(), &rtvDesc, rtv.GetAddressOf()),
+                            "Failed to create render target view");
+
+        m_deviceContext->OMSetRenderTargets(1, rtv.GetAddressOf(), 0);
+        m_deviceContext->ClearRenderTargetView(rtv.Get(), clearColor);
+
+        // update shared constant buffer
+        m_perFrameBuffer.m_cache.view = m_cubeMapViews[face];
+        m_perFrameBuffer.Update(m_deviceContext);
+        m_perFrameBuffer.VSSet(m_deviceContext, 1);
+        renderCube();
+    }
+}
+
+void D3d11RendererImpl::renderToSpecularMap()
+{
+    // set viewport
+    setViewport(Renderer::specularMapRes);
+
+    m_prefilterProgram.set(m_deviceContext);
+    m_deviceContext->PSSetShaderResources(0, 1, m_environmentMap.srv.GetAddressOf());
+    // TODO: refactor sampler
+    m_deviceContext->PSSetSamplers(0, 1, m_hdrTexture->m_sampler.GetAddressOf());
+
+    m_perFrameBuffer.m_cache.projection = m_cubeMapPerspective;
+
+    FourFloatsBuffer m_specularRoughnessBuffer;
+    m_specularRoughnessBuffer.Create(m_device);
+
+    for (int face = 0; face < 6; ++face)
+    {
+        // update shared constant buffer
+        m_perFrameBuffer.m_cache.view = m_cubeMapViews[face];
+        m_perFrameBuffer.Update(m_deviceContext);
+        m_perFrameBuffer.VSSet(m_deviceContext, 1);
+
+        for (int mipSlice = 0; mipSlice < Renderer::specularMapMipLevels; ++mipSlice)
+        {
+            float roughness = float(mipSlice) / float(Renderer::specularMapMipLevels - 1.0f);
+            m_specularRoughnessBuffer.m_cache.fourFloats.x = roughness;
+            m_specularRoughnessBuffer.Update(m_deviceContext);
+            m_specularRoughnessBuffer.PSSet(m_deviceContext, 0);
+
+            // temporary render target view
+            ComPtr<ID3D11RenderTargetView> rtv;
+            D3D11_RENDER_TARGET_VIEW_DESC rtvDesc {};
+            rtvDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+            rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
+            rtvDesc.Texture2DArray.MipSlice = mipSlice;
+            rtvDesc.Texture2DArray.ArraySize = 1;
+            rtvDesc.Texture2DArray.FirstArraySlice = face;
+            D3D_THROW_IF_FAILED(m_device->CreateRenderTargetView(m_specularMap.cubeBuffer.Get(), &rtvDesc, rtv.GetAddressOf()),
+                "Failed to create render target view");
+
+            m_deviceContext->OMSetRenderTargets(1, rtv.GetAddressOf(), 0);
+            m_deviceContext->ClearRenderTargetView(rtv.Get(), clearColor);
+
+            renderCube();
+        }
+    }
+}
+
+void D3d11RendererImpl::calculateCubemapMatrices()
+{
+    CubeCamera cubeCamera(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+    m_cubeMapPerspective = cubeCamera.ProjectionMatrixD3d();
+    cubeCamera.ViewMatricesD3d(m_cubeMapViews);
 }
 
 void D3d11RendererImpl::cleanupImmediateRenderTarget()
@@ -403,6 +454,7 @@ void D3d11RendererImpl::compileShaders()
     m_convertProgram.create(m_device, "Convert Program", "cubemap", "to_cubemap");
     m_irradianceProgram.create(m_device, "Irradiance Program", "cubemap", "irradiance");
     m_backgroundProgram.create(m_device, "Background Program", "background");
+    m_prefilterProgram.create(m_device, "Prefilter Program", "cubemap", "prefilter");
 }
 
 void D3d11RendererImpl::createGeometries()

@@ -11,6 +11,11 @@ struct PerFrameCache
     mat4 projection;
 };
 
+struct Vec4Cache
+{
+    vec4 fourFloats;
+};
+
 struct PerDrawCache
 {
     mat4 transform;
@@ -85,6 +90,7 @@ typedef ConstantBuffer<PerFrameCache> PerFrameBuffer;
 typedef ConstantBuffer<PerDrawCache> PerDrawBuffer;
 typedef ConstantBuffer<LightDataCache> LightBuffer;
 typedef ConstantBuffer<ViewPositionCache> ViewPositionBuffer;
+typedef ConstantBuffer<Vec4Cache> FourFloatsBuffer;
 
 
 struct HlslProgram
@@ -119,13 +125,10 @@ struct ImmediateRenderTarget
     ComPtr<ID3D11DepthStencilView> dsv;
 };
 
-struct CubeMapRenderTarget
+struct CubemapTexture
 {
-    array<ComPtr<ID3D11RenderTargetView>, 6>    rtvs;
-    ComPtr<ID3D11DepthStencilView>              dsv;
     ComPtr<ID3D11ShaderResourceView>            srv;
     ComPtr<ID3D11Texture2D>                     cubeBuffer;
-    ComPtr<ID3D11Texture2D>                     depthBuffer;
 };
 
 } } // namespace pbr::d3d11

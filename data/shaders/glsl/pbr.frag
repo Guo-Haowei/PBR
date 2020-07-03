@@ -27,7 +27,7 @@ uniform vec4 u_view_pos;
 
 /// IBL
 uniform samplerCube u_irradiance_map;
-uniform samplerCube u_prefiltered_map;
+uniform samplerCube u_specular_map;
 uniform sampler2D u_brdf_lut;
 
 // NDF(n, h, alpha) = alpha^2 / (pi * ((n dot h)^2 * (alpha^2 - 1) + 1)^2)
@@ -142,7 +142,7 @@ void main()
 
     // sample both pre-filtered map and BRDF lut and combine then together
     const float MAX_REFLECTION_LOD = 4.0;
-    vec3 prefilteredColor = textureLod(u_prefiltered_map, R, roughness * MAX_REFLECTION_LOD).rgb;
+    vec3 prefilteredColor = textureLod(u_specular_map, R, roughness * MAX_REFLECTION_LOD).rgb;
     float reflectPower = max(dot(N, V), 0.0);
     // vec2 brdfUV = vec2(reflectPower, 1.0 - roughness); // flip y
     vec2 brdfUV = vec2(reflectPower, roughness);

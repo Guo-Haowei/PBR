@@ -30,8 +30,16 @@ namespace pbr { namespace d3d11 {
     };
 } } // namespace pbr::d3d11
 
+#ifdef _DEBUG
+#define D3D_THROW_IF_FAILED(EXP, DESC) \
+{ \
+    HRESULT _HR = (EXP); \
+    if (_HR != S_OK) __debugbreak(); \
+}
+#else
 #define D3D_THROW_IF_FAILED(EXP, DESC) \
 { \
     HRESULT _HR = (EXP); \
     if (_HR != S_OK) throw pbr::d3d11::D3dException(__LINE__, __FILE__, DESC, _HR); \
 }
+#endif

@@ -38,4 +38,3 @@ float4 ps_main(out_vs input) : SV_TARGET
     irradiance = PI * irradiance * (1.0 / samples);
     return float4(irradiance, 1.0);
 }
-
