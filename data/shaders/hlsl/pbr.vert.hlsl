@@ -28,7 +28,7 @@ out_vs vs_main(in_vs input, uint id : SV_InstanceID)
 {
     out_vs output;
     float spacing = 2.5;
-    int count = 7;
+    int count = 5;
     int ix = id % count;
     int iy = id / count;
     output.normal.w = clamp(float(ix) / float(count), 0.05, 0.95); // roughness
@@ -36,7 +36,6 @@ out_vs vs_main(in_vs input, uint id : SV_InstanceID)
     float x = spacing * (float(ix - count / 2));
     float y = spacing * (float(iy - count / 2));
     float3 offset = float3(x, y, 0.0);
-    // float4 world_position = mul(transform, float4(input.position, 1.0));
     float4 world_position = float4(input.position + offset, 1.0);
     output.position.xyz = world_position.xyz;
     output.normal.xyz = input.normal;

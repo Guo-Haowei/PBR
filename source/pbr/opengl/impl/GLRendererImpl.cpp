@@ -40,7 +40,7 @@ void GLRendererImpl::Initialize()
     glEnable(GL_CULL_FACE);
     glFrontFace(GL_CW);
     glDepthFunc(GL_LEQUAL);
-    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+    // glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 }
 
 void GLRendererImpl::DumpGraphicsCardInfo()
@@ -103,11 +103,11 @@ void GLRendererImpl::PrepareGpuResources()
     createGeometries();
     // glBindVertexArray(0);
 
-    // load enviroment map
+    // load hdr texture
     auto envImage = utility::ReadHDRImage(DEFAULT_HDR_ENV_MAP);
     m_hdrTexture = CreateTexture(envImage, GL_RGB32F);
     free(envImage.buffer.pData);
-    // load brdf LUT
+    // load brdf texture
     auto brdfImage = utility::ReadBrdfLUT(BRDF_LUT, Renderer::brdfLUTImageRes);
     m_brdfLUTTexture = CreateTexture(brdfImage, GL_RG16F);
     free(brdfImage.buffer.pData);

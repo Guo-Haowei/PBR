@@ -1,8 +1,8 @@
 #define PI 3.14159265359
-#define SAMPLE_COUNT 1024
+#define SAMPLE_COUNT 1024u
 
 TextureCube envTexture : register(t0);
-SamplerState envSampler : register(s0);
+SamplerState envSampler : register(s1);
 
 struct out_vs
 {
@@ -47,15 +47,15 @@ float2 Hammersley(uint i, uint N)
 
 float3 ImportanceSampleGGX(float2 Xi, float3 N, float roughness)
 {
-    float a = roughness*roughness;
+    float a = roughness * roughness;
 
     float phi = 2.0 * PI * Xi.x;
-    float cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (a*a - 1.0) * Xi.y));
-    float sinTheta = sqrt(1.0 - cosTheta*cosTheta);
+    float cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (a * a - 1.0) * Xi.y));
+    float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
 
 
     // from tangent-space H vector to world-space sample vector
-    float3 up          = abs(N.z) < 0.999 ? float3(0.0, 0.0, 1.0) : float3(1.0, 0.0, 0.0);
+    float3 up        = abs(N.z) < 0.999 ? float3(0.0, 0.0, 1.0) : float3(1.0, 0.0, 0.0);
     float3 tangent   = normalize(cross(up, N));
     float3 bitangent = cross(N, tangent);
 
@@ -83,13 +83,13 @@ float4 ps_main(out_vs input) : SV_TARGET
     {
         float2 Xi = Hammersley(i, SAMPLE_COUNT);
         float3 H = ImportanceSampleGGX(Xi, N, roughness);
-        float3 L = -reflect(V, H);
+        float3 L = reflect(-V, H);
 
-        float NdotL = max(dot(N, L), 0.0);
+        float NdotL = dot(N, L);
         if (NdotL > 0.0)
         {
             // sample from the environment's mip level based on roughness/pdf
-            float D   = DistributionGGX(N, H, roughness);
+            float D = DistributionGGX(N, H, roughness);
             float NdotH = max(dot(N, H), 0.0);
             float HdotV = max(dot(H, V), 0.0);
             float pdf = D * NdotH / (4.0 * HdotV) + 0.0001;
@@ -100,9 +100,8 @@ float4 ps_main(out_vs input) : SV_TARGET
 
             float mipLevel = roughness == 0.0 ? 0.0 : 0.5 * log2(saSample / saTexel);
 
-            float3 backgroundColor = envTexture.Sample(envSampler, L).rgb;
+            float3 backgroundColor = envTexture.SampleLevel(envSampler, L, mipLevel).rgb;
             prefilteredColor += backgroundColor * NdotL;
-            // prefilteredColor += textureLod(u_env_map, L, mipLevel).rgb * NdotL;
             totalWeight += NdotL;
         }
     }

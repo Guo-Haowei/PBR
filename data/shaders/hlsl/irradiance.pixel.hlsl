@@ -1,6 +1,6 @@
 #define PI 3.14159265359
 
-TextureCube envTexture : register(t1);
+TextureCube envTexture : register(t0);
 SamplerState envSampler : register(s1);
 
 static const float sampleStep = 0.025;
@@ -29,7 +29,7 @@ float4 ps_main(out_vs input) : SV_TARGET
             float ydir = sin(theta) * sin(phi);
             float zdir = cos(theta);
             float3 sampleVec = xdir * right + ydir * up + zdir * N;
-            float3 color = envTexture.Sample(envSampler, sampleVec).rgb;
+            float3 color = envTexture.SampleLevel(envSampler, sampleVec, 0.0).rgb;
             irradiance += color * cos(theta) * sin(theta);
             samples += 1.0;
         }

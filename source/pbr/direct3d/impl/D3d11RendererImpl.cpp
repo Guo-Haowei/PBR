@@ -40,7 +40,7 @@ void D3d11RendererImpl::renderSpheres()
     UINT stride = sizeof(Vertex), offset = 0;
     m_deviceContext->IASetVertexBuffers(0, 1, m_sphere.vertexBuffer.GetAddressOf(), &stride, &offset);
     m_deviceContext->IASetIndexBuffer(m_sphere.indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
-    const int size = 7;
+    const int size = 5;
     // draw
     m_deviceContext->DrawIndexedInstanced(m_sphere.indexCount, size * size, 0, 0, 0);
 }
@@ -83,8 +83,11 @@ void D3d11RendererImpl::Render(const Camera& camera)
 
     // render spheres
     m_pbrProgram.set(m_deviceContext);
-    m_deviceContext->PSSetShaderResources(0, 1, m_irradianceMap.srv.GetAddressOf());
-    m_deviceContext->PSSetSamplers(0, 1, m_hdrTexture->m_sampler.GetAddressOf());
+    m_deviceContext->PSSetShaderResources(0, 1, m_brdfLUTSrv.GetAddressOf());
+    m_deviceContext->PSSetShaderResources(1, 1, m_specularMap.srv.GetAddressOf());
+    m_deviceContext->PSSetShaderResources(2, 1, m_irradianceMap.srv.GetAddressOf());
+    m_deviceContext->PSSetSamplers(0, 1, m_sampler.GetAddressOf());
+    m_deviceContext->PSSetSamplers(1, 1, m_samplerLod.GetAddressOf());
 
     if (camera.IsDirty())
     {
@@ -96,10 +99,8 @@ void D3d11RendererImpl::Render(const Camera& camera)
 
     // render background
     m_backgroundProgram.set(m_deviceContext);
-    // m_deviceContext->PSSetShaderResources(0, 1, m_irradianceMap.srv.GetAddressOf());
-    // m_deviceContext->PSSetShaderResources(0, 1, m_environmentMap.srv.GetAddressOf());
-    m_deviceContext->PSSetShaderResources(0, 1, m_specularMap.srv.GetAddressOf());
-    m_deviceContext->PSSetSamplers(0, 1, m_hdrTexture->m_sampler.GetAddressOf());
+    m_deviceContext->PSSetSamplers(0, 1, m_sampler.GetAddressOf());
+    m_deviceContext->PSSetShaderResources(3, 1, m_environmentMap.srv.GetAddressOf());
     if (camera.IsDirty())
     {
         m_perFrameBuffer.VSSet(m_deviceContext, 1);
@@ -200,9 +201,17 @@ void D3d11RendererImpl::PrepareGpuResources()
     // geometries
     createGeometries();
 
-    // hdr texture
-    auto image = utility::ReadHDRImage(DEFAULT_HDR_ENV_MAP);
-    m_hdrTexture.reset(CreateHDRTexture(m_device, image));
+    // sampler
+    createSampler();
+
+    // load hdr texture
+    auto envImage = utility::ReadHDRImage(DEFAULT_HDR_ENV_MAP);
+    createTexture2D(m_hdrSrv, envImage, DXGI_FORMAT_R32G32B32_FLOAT);
+    free(envImage.buffer.pData);
+    // load brdf texture
+    auto brdfImage = utility::ReadBrdfLUT(BRDF_LUT, Renderer::brdfLUTImageRes);
+    createTexture2D(m_brdfLUTSrv, brdfImage, DXGI_FORMAT_R16G16_FLOAT);
+    free(brdfImage.buffer.pData);
 
     // constant buffer
     m_perFrameBuffer.Create(m_device);
@@ -237,16 +246,35 @@ void D3d11RendererImpl::PrepareGpuResources()
     m_deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     // render environment map only once
     calculateCubemapMatrices();
-    createCubemap(m_environmentMap, Renderer::cubeMapRes);
+    createCubemap(m_environmentMap, Renderer::cubeMapRes, Renderer::specularMapMipLevels, true);
     renderToEnvironmentMap();
-    // FIXME: environment map will not be ready if only render once
     createCubemap(m_irradianceMap, Renderer::irradianceMapRes);
-    renderToIrradianceMap();
     renderToIrradianceMap();
     createCubemap(m_specularMap, Renderer::specularMapRes, Renderer::specularMapMipLevels);
     renderToSpecularMap();
 
     uploadConstantBuffer();
+}
+
+void D3d11RendererImpl::createSampler()
+{
+    D3D11_SAMPLER_DESC samplerDesc {};
+    samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    samplerDesc.AddressU = samplerDesc.AddressV = samplerDesc.AddressW =
+        D3D11_TEXTURE_ADDRESS_WRAP;
+    samplerDesc.MaxAnisotropy = 1;
+    samplerDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+    samplerDesc.MinLOD = 0.0f;
+    samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+    D3D_THROW_IF_FAILED(m_device->CreateSamplerState(&samplerDesc, m_sampler.GetAddressOf()),
+        "Failed to create sampler satete");
+
+    // samplerDesc.Filter = D3D11_FILTER_ANISOTROPIC;
+    samplerDesc.MaxLOD = float(Renderer::specularMapMipLevels) - 1.0f;
+
+    D3D_THROW_IF_FAILED(m_device->CreateSamplerState(&samplerDesc, m_samplerLod.GetAddressOf()),
+        "Failed to create sampler satete");
 }
 
 void D3d11RendererImpl::uploadConstantBuffer()
@@ -289,7 +317,7 @@ void D3d11RendererImpl::createImmediateRenderTarget(const Extent2i& extent)
         "Failed to create depth stencil view");
 }
 
-void D3d11RendererImpl::createCubemap(CubemapTexture& target, int res, int mipLevels)
+void D3d11RendererImpl::createCubemap(CubemapTexture& target, int res, int mipLevels, bool genMips)
 {
     D3D11_TEXTURE2D_DESC textureDesc {};
     textureDesc.Width = textureDesc.Height = res;
@@ -301,6 +329,8 @@ void D3d11RendererImpl::createCubemap(CubemapTexture& target, int res, int mipLe
     textureDesc.Usage = D3D11_USAGE_DEFAULT;
     textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
     textureDesc.MiscFlags = D3D11_RESOURCE_MISC_TEXTURECUBE;
+    if (genMips)
+        textureDesc.MiscFlags |= D3D11_RESOURCE_MISC_GENERATE_MIPS;
 
     D3D_THROW_IF_FAILED(m_device->CreateTexture2D(&textureDesc, NULL, target.cubeBuffer.GetAddressOf()),
         "Failed to create cube buffer");
@@ -320,8 +350,8 @@ void D3d11RendererImpl::renderToEnvironmentMap()
 
     // set shader
     m_convertProgram.set(m_deviceContext);
-    m_deviceContext->PSSetShaderResources(0, 1, m_hdrTexture->m_shaderResourceView.GetAddressOf());
-    m_deviceContext->PSSetSamplers(0, 1, m_hdrTexture->m_sampler.GetAddressOf());
+    m_deviceContext->PSSetShaderResources(0, 1, m_hdrSrv.GetAddressOf());
+    m_deviceContext->PSSetSamplers(0, 1, m_sampler.GetAddressOf());
 
     m_perFrameBuffer.m_cache.projection = m_cubeMapPerspective;
 
@@ -347,6 +377,14 @@ void D3d11RendererImpl::renderToEnvironmentMap()
         m_perFrameBuffer.VSSet(m_deviceContext, 1);
         renderCube();
     }
+
+    // unbound srv and rtv
+    ID3D11ShaderResourceView* nullSrv = nullptr;
+    ID3D11RenderTargetView* nullRtv = nullptr;
+    m_deviceContext->PSSetShaderResources(0, 1, &nullSrv);
+    m_deviceContext->OMSetRenderTargets(1, &nullRtv, nullptr);
+
+    m_deviceContext->GenerateMips(m_environmentMap.srv.Get());
 }
 
 void D3d11RendererImpl::renderToIrradianceMap()
@@ -355,9 +393,8 @@ void D3d11RendererImpl::renderToIrradianceMap()
     setViewport(Renderer::irradianceMapRes);
 
     m_irradianceProgram.set(m_deviceContext);
-    m_deviceContext->PSSetShaderResources(1, 1, m_environmentMap.srv.GetAddressOf());
-    // TODO: refactor sampler
-    m_deviceContext->PSSetSamplers(1, 1, m_hdrTexture->m_sampler.GetAddressOf());
+    m_deviceContext->PSSetShaderResources(0, 1, m_environmentMap.srv.GetAddressOf());
+    m_deviceContext->PSSetSamplers(1, 1, m_samplerLod.GetAddressOf());
 
     m_perFrameBuffer.m_cache.projection = m_cubeMapPerspective;
 
@@ -383,17 +420,20 @@ void D3d11RendererImpl::renderToIrradianceMap()
         m_perFrameBuffer.VSSet(m_deviceContext, 1);
         renderCube();
     }
+
+    // unbound srv and rtv
+    ID3D11ShaderResourceView* nullSrv = nullptr;
+    ID3D11RenderTargetView* nullRtv = nullptr;
+    m_deviceContext->PSSetShaderResources(0, 1, &nullSrv);
+    m_deviceContext->OMSetRenderTargets(1, &nullRtv, nullptr);
 }
 
 void D3d11RendererImpl::renderToSpecularMap()
 {
-    // set viewport
-    setViewport(Renderer::specularMapRes);
-
     m_prefilterProgram.set(m_deviceContext);
     m_deviceContext->PSSetShaderResources(0, 1, m_environmentMap.srv.GetAddressOf());
-    // TODO: refactor sampler
-    m_deviceContext->PSSetSamplers(0, 1, m_hdrTexture->m_sampler.GetAddressOf());
+    m_deviceContext->PSSetSamplers(1, 1, m_samplerLod.GetAddressOf());
+    // m_deviceContext->PSSetSamplers(0, 1, m_sampler.GetAddressOf());
 
     m_perFrameBuffer.m_cache.projection = m_cubeMapPerspective;
 
@@ -407,8 +447,11 @@ void D3d11RendererImpl::renderToSpecularMap()
         m_perFrameBuffer.Update(m_deviceContext);
         m_perFrameBuffer.VSSet(m_deviceContext, 1);
 
-        for (int mipSlice = 0; mipSlice < Renderer::specularMapMipLevels; ++mipSlice)
+        unsigned int viewportSize = Renderer::specularMapRes;
+        for (int mipSlice = 0; mipSlice < Renderer::specularMapMipLevels; ++mipSlice, viewportSize = viewportSize >> 1)
         {
+            // set viewport
+            setViewport(viewportSize);
             float roughness = float(mipSlice) / float(Renderer::specularMapMipLevels - 1.0f);
             m_specularRoughnessBuffer.m_cache.fourFloats.x = roughness;
             m_specularRoughnessBuffer.Update(m_deviceContext);
@@ -431,6 +474,12 @@ void D3d11RendererImpl::renderToSpecularMap()
             renderCube();
         }
     }
+
+    // unbound srv and rtv
+    ID3D11ShaderResourceView* nullSrv = nullptr;
+    ID3D11RenderTargetView* nullRtv = nullptr;
+    m_deviceContext->PSSetShaderResources(0, 1, &nullSrv);
+    m_deviceContext->OMSetRenderTargets(1, &nullRtv, nullptr);
 }
 
 void D3d11RendererImpl::calculateCubemapMatrices()
@@ -564,6 +613,50 @@ void D3d11RendererImpl::createGeometries()
 
         D3D_THROW_IF_FAILED(hr, "Failed to create cube input layout");
     }
+}
+
+void D3d11RendererImpl::createTexture2D(ComPtr<ID3D11ShaderResourceView>& srv, const Image& image, DXGI_FORMAT internalFormat)
+{
+    DXGI_FORMAT format;
+    switch (image.component)
+    {
+        case 4: format = DXGI_FORMAT_R32G32B32A32_FLOAT; break;
+        case 3: format = DXGI_FORMAT_R32G32B32_FLOAT; break;
+        case 2: format = DXGI_FORMAT_R32G32_FLOAT; break;
+        default:
+            THROW_EXCEPTION("[texture] Unsupported image format, image has component " + std::to_string(image.component));
+    }
+
+    D3D11_TEXTURE2D_DESC textureDesc {};
+    textureDesc.Width = image.width;
+    textureDesc.Height = image.height;
+    textureDesc.MipLevels = 1;
+    textureDesc.ArraySize = 1;
+    textureDesc.Format = format;
+    textureDesc.SampleDesc.Count = 1;
+    textureDesc.SampleDesc.Quality = 0;
+    textureDesc.Usage = D3D11_USAGE_DEFAULT;
+    textureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+    textureDesc.CPUAccessFlags = 0;
+    textureDesc.MiscFlags = 0;
+
+    D3D11_SUBRESOURCE_DATA textureData {};
+    textureData.pSysMem = image.buffer.pData;
+    textureData.SysMemPitch = image.width * image.component * sizeof(float);
+    textureData.SysMemSlicePitch = image.height * textureData.SysMemPitch;
+
+    ComPtr<ID3D11Texture2D> texture;
+    D3D_THROW_IF_FAILED(m_device->CreateTexture2D(&textureDesc, &textureData, texture.GetAddressOf()),
+        "Failed to create texture");
+
+    D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc {};
+    srvDesc.Format = textureDesc.Format;
+    srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+    srvDesc.Texture2D.MostDetailedMip = 0;
+    srvDesc.Texture1D.MipLevels = -1;
+
+    D3D_THROW_IF_FAILED(m_device->CreateShaderResourceView(texture.Get(), &srvDesc, srv.GetAddressOf()),
+        "Failed to create shader resource view");
 }
 
 } } // namespace pbr::d3d11

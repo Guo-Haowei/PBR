@@ -77,7 +77,7 @@ vec3 FresnelSchlickRoughness(float cosTheta, in vec3 F0, float roughness)
     return F0 + (max(vec3(1.0 - roughness) - F0, vec3(0.0))) * pow(1.0 - cosTheta, 5.0);
 }
 
-const vec3 albedo = vec3(0.5, 0.5, 0.5);
+const vec3 albedo = vec3(0.5);
 const float ao = 1.0;
 
 void main()
@@ -144,7 +144,6 @@ void main()
     const float MAX_REFLECTION_LOD = 4.0;
     vec3 prefilteredColor = textureLod(u_specular_map, R, roughness * MAX_REFLECTION_LOD).rgb;
     float reflectPower = max(dot(N, V), 0.0);
-    // vec2 brdfUV = vec2(reflectPower, 1.0 - roughness); // flip y
     vec2 brdfUV = vec2(reflectPower, roughness);
     vec2 brdf = texture(u_brdf_lut, brdfUV).rg;
     vec3 specular = prefilteredColor * (F * brdf.x + brdf.y);

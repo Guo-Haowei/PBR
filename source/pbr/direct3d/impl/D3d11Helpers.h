@@ -106,19 +106,6 @@ struct HlslProgram
     ComPtr<ID3DBlob> vertShaderBlob;
 };
 
-struct Texture2D
-{
-    ComPtr<ID3D11ShaderResourceView> m_shaderResourceView;
-    ComPtr<ID3D11SamplerState> m_sampler;
-
-    Texture2D(ID3D11ShaderResourceView* pSrv, ID3D11SamplerState* pSampler)
-        : m_shaderResourceView(pSrv), m_sampler(pSampler)
-    {
-    }
-};
-
-extern Texture2D* CreateHDRTexture(ComPtr<ID3D11Device>& device, const Image& image);
-
 struct ImmediateRenderTarget
 {
     ComPtr<ID3D11RenderTargetView> rtv;

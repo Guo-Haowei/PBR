@@ -15,7 +15,7 @@ float2 sampleSphericalMap(in float3 v)
     float2 uv = float2(atan2(v.z, v.x), asin(v.y));
     uv *= invAtan;
     uv += 0.5;
-    // uv.y = 1.0 - uv.y;
+    uv.y = 1.0 - uv.y;
     return uv;
 }
 

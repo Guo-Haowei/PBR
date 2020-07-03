@@ -19,7 +19,7 @@ private:
     void createDevice();
     void createSwapchain();
     void createImmediateRenderTarget(const Extent2i& extent);
-    void createCubemap(CubemapTexture& inCubemap, int res, int mipLevels = 1);
+    void createCubemap(CubemapTexture& inCubemap, int res, int mipLevels = 1, bool genMips = false);
     void cleanupImmediateRenderTarget();
     void compileShaders();
     void createGeometries();
@@ -31,46 +31,52 @@ private:
     void renderSpheres();
     void calculateCubemapMatrices();
     void uploadConstantBuffer();
+    void createSampler();
+    void createTexture2D(ComPtr<ID3D11ShaderResourceView>& srv, const Image& image, DXGI_FORMAT internalFormat);
 private:
-    const Window*                   m_pWindow;
-    HWND                            m_hwnd;
-    ComPtr<ID3D11Device>            m_device;
-    ComPtr<ID3D11DeviceContext>     m_deviceContext;
-    ComPtr<IDXGIDevice>             m_dxgiDevice;
-    ComPtr<IDXGIAdapter>            m_dxgiAdapter;
-    ComPtr<IDXGIFactory>            m_dxgiFactory;
-    ComPtr<IDXGISwapChain>          m_swapChain;
+    const Window*                       m_pWindow;
+    HWND                                m_hwnd;
+    ComPtr<ID3D11Device>                m_device;
+    ComPtr<ID3D11DeviceContext>         m_deviceContext;
+    ComPtr<IDXGIDevice>                 m_dxgiDevice;
+    ComPtr<IDXGIAdapter>                m_dxgiAdapter;
+    ComPtr<IDXGIFactory>                m_dxgiFactory;
+    ComPtr<IDXGISwapChain>              m_swapChain;
     // render target
-    ImmediateRenderTarget           m_immediate;
+    ImmediateRenderTarget               m_immediate;
     // shaders
-    HlslProgram                     m_pbrProgram;
-    HlslProgram                     m_convertProgram;
-    HlslProgram                     m_irradianceProgram;
-    HlslProgram                     m_prefilterProgram;
-    HlslProgram                     m_backgroundProgram;
+    HlslProgram                         m_pbrProgram;
+    HlslProgram                         m_convertProgram;
+    HlslProgram                         m_irradianceProgram;
+    HlslProgram                         m_prefilterProgram;
+    HlslProgram                         m_backgroundProgram;
     // input
-    ComPtr<ID3D11Buffer>            m_constantBuffer;
+    ComPtr<ID3D11Buffer>                m_constantBuffer;
     // buffers
-    PerFrameBuffer                  m_perFrameBuffer;
-    PerDrawBuffer                   m_perDrawBuffer;
-    LightBuffer                     m_lightBuffer;
-    ViewPositionBuffer              m_viewPositionBuffer;
-    ComPtr<ID3D11InputLayout>       m_cubeLayout;
-    PerDrawData                     m_cube;
-    ComPtr<ID3D11InputLayout>       m_sphereLayout;
-    PerDrawData                     m_sphere;
+    PerFrameBuffer                      m_perFrameBuffer;
+    PerDrawBuffer                       m_perDrawBuffer;
+    LightBuffer                         m_lightBuffer;
+    ViewPositionBuffer                  m_viewPositionBuffer;
+    ComPtr<ID3D11InputLayout>           m_cubeLayout;
+    PerDrawData                         m_cube;
+    ComPtr<ID3D11InputLayout>           m_sphereLayout;
+    PerDrawData                         m_sphere;
     // rasterizer
-    ComPtr<ID3D11RasterizerState>   m_rasterizer;
+    ComPtr<ID3D11RasterizerState>       m_rasterizer;
     // reverse depth
-    ComPtr<ID3D11DepthStencilState> m_depthStencilState;
+    ComPtr<ID3D11DepthStencilState>     m_depthStencilState;
     // textures
-    unique_ptr<Texture2D>           m_hdrTexture;
-    CubemapTexture                  m_environmentMap;
-    CubemapTexture                  m_irradianceMap;
-    CubemapTexture                  m_specularMap;
+    ComPtr<ID3D11ShaderResourceView>    m_hdrSrv;
+    ComPtr<ID3D11ShaderResourceView>    m_brdfLUTSrv;
+    CubemapTexture                      m_environmentMap;
+    CubemapTexture                      m_irradianceMap;
+    CubemapTexture                      m_specularMap;
+    // sampler
+    ComPtr<ID3D11SamplerState>          m_sampler;
+    ComPtr<ID3D11SamplerState>          m_samplerLod;
     // matrices
-    mat4                            m_cubeMapPerspective;
-    array<mat4, 6>                  m_cubeMapViews;
+    mat4                                m_cubeMapPerspective;
+    array<mat4, 6>                      m_cubeMapViews;
 };
 
 } } // namespace pbr::d3d11

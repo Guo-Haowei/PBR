@@ -1,4 +1,4 @@
-TextureCube envTexture : register(t0);
+TextureCube envTexture : register(t3);
 
 SamplerState envSampler : register(s0);
 
@@ -14,7 +14,6 @@ float4 ps_main(out_vs input) : SV_TARGET
     uvw.y = -uvw.y;
     float3 env_color = envTexture.Sample(envSampler, uvw).rgb;
     env_color = env_color / (env_color + float3(1.0, 1.0, 1.0));
-    float ratio = 1.0 / 2.2;
-    env_color = pow(env_color, float3(ratio, ratio, ratio));
+    env_color = pow(env_color, (1.0 / 2.2));
     return float4(env_color, 1.0);
 }

@@ -25,8 +25,12 @@ cbuffer PerFrameBuffer : register(b1)
     float4 view_position;
 };
 
-TextureCube irradianceTexture : register(t0);
-SamplerState irradianceSampler : register(s0);
+Texture2D brdfLut : register(t0);
+TextureCube specularMap : register(t1);
+TextureCube irradianceMap : register(t2);
+
+SamplerState g_sampler : register(s0);
+SamplerState g_samplerLod : register(s1);
 
 // NDF(n, h, alpha) = alpha^2 / (pi * ((n dot h)^2 * (alpha^2 - 1) + 1)^2)
 float DistributionGGX(in float3 N, in float3 H, float roughness)
@@ -71,12 +75,18 @@ float3 FresnelSchlick(float cosTheta, in float3 F0)
     return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
+float3 FresnelSchlickRoughness(float cosTheta, in float3 F0, float roughness)
+{
+    float3 oneMinusRoughness = float3(1.0 - roughness, 1.0 - roughness, 1.0 - roughness) - F0;
+    return F0 + max(oneMinusRoughness, float3(0.0, 0.0, 0.0)) * pow(1.0 - cosTheta, 5.0);
+}
+
 float3 mix(float3 x, float3 y, float a)
 {
     return (1.0 - a) * x + a * y;
 }
 
-static const float3 albedo = float3(0.5, 0.5, 0.5);
+static const float3 albedo = 0.5;
 static const float ao = 1.0;
 
 float4 ps_main(out_vs input) : SV_TARGET
@@ -87,6 +97,7 @@ float4 ps_main(out_vs input) : SV_TARGET
 
     float3 N = normalize(input.normal.xyz);
     float3 V = normalize(view_position.xyz - position);
+    float3 R = reflect(-V, N);
 
     // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0
     // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)
@@ -130,20 +141,31 @@ float4 ps_main(out_vs input) : SV_TARGET
     }
 
     // image based ambient lighting
-    float3 kS = FresnelSchlick(max(dot(N, V), 0.0), F0);
+    float3 F = FresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);
+    float3 kS = F;
     float3 kD = 1.0 - kS;
     kD *= (1.0 - metallic);
-    float3 irradiance = irradianceTexture.Sample(irradianceSampler, N).rgb;
+    float3 irradiance = irradianceMap.Sample(g_sampler, N).rgb;
     float3 diffuse = irradiance * albedo;
-    float3 ambient = (kD * diffuse) * ao;
+
+    // sample both pre-filtered map and BRDF lut and combine then together
+    const float MAX_REFLECTION_LOD = 4.0;
+    float3 prefilteredColor = specularMap.SampleLevel(g_samplerLod, R, roughness * MAX_REFLECTION_LOD).rgb;
+    float reflectPower = max(dot(N, V), 0.0);
+
+    // float2 brdfUV = float2(reflectPower, 1.0 - roughness); // flip y
+    float2 brdfUV = float2(reflectPower, roughness);
+    float2 brdf = brdfLut.Sample(g_sampler, brdfUV).rg;
+    float3 specular = prefilteredColor * (F * brdf.x + brdf.y);
+
+    float3 ambient = (kD * diffuse + specular) * ao;
 
     float3 color = ambient + Lo;
 
     // HDR tonemapping
-    color = color / (color + float3(1.0, 1.0, 1.0));
+    color = color / (color + 1.0);
     // gamma correction
-    float s = 1.0 / 2.2;
-    color = pow(color, float3(s, s, s));
+    color = pow(color, 1.0 / 2.2);
 
     return float4(color, 1.0);
 }
