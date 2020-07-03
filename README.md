@@ -22,3 +22,5 @@ Direct3D 11   | In progress
 Learn OpenGL [https://learnopengl.com/PBR/Theory](https://learnopengl.com/PBR/Theory)
 
 HDR image from [http://www.hdrlabs.com/sibl/archive.html](http://www.hdrlabs.com/sibl/archive.html)
+
+Cerberus model from [http://artisaverb.info/PBT.html](http://artisaverb.info/PBT.html)
