@@ -29,7 +29,6 @@ uniform PerDrawBuffer u_per_draw;
 void main()
 {
     vec4 world_position = u_per_draw.transform * vec4(in_position, 1.0);
-    world_position = u_per_draw.transform * world_position;
     vs_pass.position = world_position.xyz;
     vs_pass.normal = mat3(u_per_draw.transform) * in_normal;
     vs_pass.uv = in_uv;

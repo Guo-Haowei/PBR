@@ -7,8 +7,8 @@ namespace pbr { namespace utility {
     extern string ReadAsciiFile(const string& path);
     extern vector<char> ReadBinaryFile(const char* path);
     extern vector<char> ReadBinaryFile(const string& path);
-    extern Image ReadPng(const char* path);
-    extern Image ReadPng(const string& path);
+    extern Image ReadPng(const char* path, int comp = 0);
+    extern Image ReadPng(const string& path, int comp = 0);
     extern Image ReadHDRImage(const char* path);
     extern Image ReadHDRImage(const string& path);
     extern Image ReadBrdfLUT(const char* path, int size);

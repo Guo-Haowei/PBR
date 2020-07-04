@@ -132,11 +132,6 @@ void GLRendererImpl::PrepareGpuResources()
     // buffer
     createGeometries();
 
-    // load model textures
-    // GLTexture       m_albedoTexture;
-    // GLTexture       m_normalTexture;
-    // GLTexture       m_roughnessTexture;
-    // GLTexture       m_metallicTexture;
     // albedo
     auto albedoImage = utility::ReadPng(CERBERUS_DIR "Cerberus_A.png");
     m_albedoTexture = CreateTexture(albedoImage, GL_RGB);
@@ -456,9 +451,8 @@ void GLRendererImpl::uploadConstantUniforms()
         m_pbrModelProgram.setUniform(light + "color", g_lights[i].color);
     }
 
-    const mat4 scaling = glm::scale(mat4(1.0f), vec3(0.23f));
-    // const mat4 rotation = mat4(1.0f);
-    const mat4 rotation = glm::rotate(mat4(1.0f), -glm::radians(45.0f), vec3(1, 0, 0));
+    const mat4 scaling = glm::scale(mat4(1.0f), vec3(0.05f));
+    const mat4 rotation = glm::rotate(mat4(1.0f), -glm::radians(90.0f), vec3(1, 0, 0));
     const mat4 translation = glm::translate(mat4(1.0f), vec3(0.0f, 0.0f, 4.0f));
     const mat4 transform = translation * rotation * scaling;
     m_pbrModelProgram.setUniform("u_per_draw.transform", transform);

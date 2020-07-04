@@ -1,4 +1,4 @@
-TextureCube envTexture : register(t3);
+TextureCube envTexture : register(t0);
 
 SamplerState envSampler : register(s0);
 

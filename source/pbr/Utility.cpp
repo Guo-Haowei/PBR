@@ -89,22 +89,42 @@ vector<char> ReadBinaryFile(const string& path)
     return ReadBinaryFile(path.c_str());
 }
 
-Image ReadPng(const char* path)
+Image ReadPng(const char* path, int comp)
 {
     Image image;
     unsigned char* data = stbi_load(path, &image.width, &image.height, &image.component, 0);
     if (!data)
         THROW_EXCEPTION("filesystem: Failed to open image '" + string(path) + "'");
 
-    image.buffer.pData = data;
-    image.buffer.sizeInByte = sizeof(unsigned char) * image.width * image.height * image.component;
     image.dataType = DataType::UINT_8T;
+    if (comp == 0)
+    {
+        image.buffer.pData = data;
+        image.buffer.sizeInByte = image.width * image.height * image.component;
+    }
+    else
+    {
+        if (!(comp == 4 && image.component == 3))
+            THROW_EXCEPTION("image: unsupported component");
+        image.buffer.sizeInByte = image.width * image.height * comp;
+        image.component = comp;
+        unsigned char* buffer = (unsigned char*)malloc(image.buffer.sizeInByte);
+        for (int i = 0; i < image.width * image.height; ++i)
+        {
+            buffer[4 * i] = data[3 * i];
+            buffer[4 * i + 1] = data[3 * i + 1];
+            buffer[4 * i + 2] = data[3 * i + 2];
+            buffer[4 * i + 3] = 0;
+        }
+        free(data);
+        image.buffer.pData = buffer;
+    }
     return image;
 }
 
-Image ReadPng(const string& path)
+Image ReadPng(const string& path, int comp)
 {
-    return ReadPng(path.c_str());
+    return ReadPng(path.c_str(), comp);
 }
 
 

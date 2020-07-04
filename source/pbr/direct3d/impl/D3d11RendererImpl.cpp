@@ -46,6 +46,18 @@ void D3d11RendererImpl::renderSpheres()
     m_deviceContext->DrawIndexedInstanced(m_sphere.indexCount, size * size, 0, 0, 0);
 }
 
+void D3d11RendererImpl::renderModel()
+{
+    // set input layout
+    m_deviceContext->IASetInputLayout(m_sphereLayout.Get());
+    // set vertex/index buffer
+    UINT stride = sizeof(Vertex), offset = 0;
+    m_deviceContext->IASetVertexBuffers(0, 1, m_model.vertexBuffer.GetAddressOf(), &stride, &offset);
+    m_deviceContext->IASetIndexBuffer(m_model.indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
+    // draw
+    m_deviceContext->DrawIndexed(m_model.indexCount, 0, 0);
+}
+
 void D3d11RendererImpl::renderCube()
 {
     // set input layout
@@ -60,10 +72,13 @@ void D3d11RendererImpl::renderCube()
 
 void D3d11RendererImpl::setSrvAndSamplers()
 {
-    m_deviceContext->PSSetShaderResources(0, 1, m_brdfLUTSrv.GetAddressOf());
-    m_deviceContext->PSSetShaderResources(1, 1, m_specularMap.srv.GetAddressOf());
-    m_deviceContext->PSSetShaderResources(2, 1, m_irradianceMap.srv.GetAddressOf());
-    m_deviceContext->PSSetShaderResources(3, 1, m_environmentMap.srv.GetAddressOf());
+    m_deviceContext->PSSetShaderResources(0, 1, m_environmentMap.srv.GetAddressOf());
+    m_deviceContext->PSSetShaderResources(1, 1, m_brdfLUTSrv.GetAddressOf());
+    m_deviceContext->PSSetShaderResources(2, 1, m_specularMap.srv.GetAddressOf());
+    m_deviceContext->PSSetShaderResources(3, 1, m_irradianceMap.srv.GetAddressOf());
+    m_deviceContext->PSSetShaderResources(4, 1, m_albedo.GetAddressOf());
+    m_deviceContext->PSSetShaderResources(5, 1, m_metallic.GetAddressOf());
+    m_deviceContext->PSSetShaderResources(6, 1, m_roughness.GetAddressOf());
     m_deviceContext->PSSetSamplers(0, 1, m_sampler.GetAddressOf());
     m_deviceContext->PSSetSamplers(1, 1, m_samplerLod.GetAddressOf());
 }
@@ -94,11 +109,6 @@ void D3d11RendererImpl::Render(const Camera& camera)
 
     // render spheres
     m_pbrProgram.set(m_deviceContext);
-    m_deviceContext->PSSetShaderResources(0, 1, m_brdfLUTSrv.GetAddressOf());
-    m_deviceContext->PSSetShaderResources(1, 1, m_specularMap.srv.GetAddressOf());
-    m_deviceContext->PSSetShaderResources(2, 1, m_irradianceMap.srv.GetAddressOf());
-    m_deviceContext->PSSetSamplers(0, 1, m_sampler.GetAddressOf());
-    m_deviceContext->PSSetSamplers(1, 1, m_samplerLod.GetAddressOf());
 
     if (camera.IsDirty())
     {
@@ -106,12 +116,14 @@ void D3d11RendererImpl::Render(const Camera& camera)
         m_viewPositionBuffer.PSSet(m_deviceContext, 1);
     }
 
+    m_pbrProgram.set(m_deviceContext);
     renderSpheres();
+
+    m_pbrModelProgram.set(m_deviceContext);
+    renderModel();
 
     // render background
     m_backgroundProgram.set(m_deviceContext);
-    m_deviceContext->PSSetSamplers(0, 1, m_sampler.GetAddressOf());
-    m_deviceContext->PSSetShaderResources(3, 1, m_environmentMap.srv.GetAddressOf());
     if (camera.IsDirty())
     {
         m_perFrameBuffer.VSSet(m_deviceContext, 1);
@@ -221,8 +233,20 @@ void D3d11RendererImpl::PrepareGpuResources()
     free(envImage.buffer.pData);
     // load brdf texture
     auto brdfImage = utility::ReadBrdfLUT(BRDF_LUT, Renderer::brdfLUTImageRes);
-    createTexture2D(m_brdfLUTSrv, brdfImage, DXGI_FORMAT_R16G16_FLOAT);
+    createTexture2D(m_brdfLUTSrv, brdfImage, DXGI_FORMAT_R32G32_FLOAT);
     free(brdfImage.buffer.pData);
+    // load albedo
+    auto albedoImage = utility::ReadPng(CERBERUS_DIR "Cerberus_A.png", 4);
+    createTexture2D(m_albedo, albedoImage, DXGI_FORMAT_R8G8B8A8_UNORM);
+    free(albedoImage.buffer.pData);
+    // metallic
+    auto metallicImage = utility::ReadPng(CERBERUS_DIR "Cerberus_M.png");
+    createTexture2D(m_metallic, metallicImage, DXGI_FORMAT_R8_UNORM);
+    free(metallicImage.buffer.pData);
+    // roughness
+    auto roughnessImage = utility::ReadPng(CERBERUS_DIR "Cerberus_R.png");
+    createTexture2D(m_roughness, roughnessImage, DXGI_FORMAT_R8_UNORM);
+    free(roughnessImage.buffer.pData);
 
     // constant buffer
     m_perFrameBuffer.Create(m_device);
@@ -292,9 +316,17 @@ void D3d11RendererImpl::createSampler()
 void D3d11RendererImpl::uploadConstantBuffer()
 {
     memcpy(&m_lightBuffer.m_cache, &g_lights, m_lightBuffer.BufferSize());
-    m_deviceContext->PSSetShader(m_pbrProgram.pixelShader.Get(), 0, 0);
+    // m_deviceContext->PSSetShader(m_pbrProgram.pixelShader.Get(), 0, 0);
     m_lightBuffer.PSSet(m_deviceContext, 0);
     m_lightBuffer.Update(m_deviceContext);
+
+    const mat4 scaling = glm::scale(mat4(1.0f), vec3(0.05f));
+    const mat4 rotation = glm::rotate(mat4(1.0f), -glm::radians(90.0f), vec3(1, 0, 0));
+    const mat4 translation = glm::translate(mat4(1.0f), vec3(0.0f, 0.0f, 4.0f));
+    const mat4 transform = translation * rotation * scaling;
+    m_perDrawBuffer.m_cache.transform = transform;
+    m_perDrawBuffer.VSSet(m_deviceContext, 0);
+    m_perDrawBuffer.Update(m_deviceContext);
 }
 
 void D3d11RendererImpl::Resize(const Extent2i& extent)
@@ -512,6 +544,7 @@ void D3d11RendererImpl::cleanupImmediateRenderTarget()
 void D3d11RendererImpl::compileShaders()
 {
     m_pbrProgram.create(m_device, "PBR Program", "pbr");
+    m_pbrModelProgram.create(m_device, "PBR Model Program", "pbr_model");
     m_convertProgram.create(m_device, "Convert Program", "cubemap", "to_cubemap");
     m_irradianceProgram.create(m_device, "Irradiance Program", "cubemap", "irradiance");
     m_backgroundProgram.create(m_device, "Background Program", "background");
@@ -520,6 +553,37 @@ void D3d11RendererImpl::compileShaders()
 
 void D3d11RendererImpl::createGeometries()
 {
+    // model
+    const auto model = utility::LoadModel(CERBERUS_DIR "Cerberus");
+    {
+        // vertex buffer
+        D3D11_BUFFER_DESC bufferDesc {};
+        bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
+        bufferDesc.ByteWidth = static_cast<uint32_t>(sizeof(Vertex) * model.vertices.size());
+        bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+        bufferDesc.CPUAccessFlags = 0;
+        bufferDesc.MiscFlags = 0;
+
+        D3D11_SUBRESOURCE_DATA data {};
+        data.pSysMem = model.vertices.data();
+        D3D_THROW_IF_FAILED(m_device->CreateBuffer(&bufferDesc, &data, m_model.vertexBuffer.GetAddressOf()),
+            "Failed to create vertex buffer");
+    }
+    {
+        // index buffer
+        m_model.indexCount = static_cast<uint32_t>(3 * model.indices.size());
+        D3D11_BUFFER_DESC bufferDesc {};
+        bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
+        bufferDesc.ByteWidth = static_cast<uint32_t>(sizeof(uvec3) * model.indices.size());
+        bufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+        bufferDesc.CPUAccessFlags = 0;
+        bufferDesc.MiscFlags = 0;
+
+        D3D11_SUBRESOURCE_DATA data {};
+        data.pSysMem = model.indices.data();
+        D3D_THROW_IF_FAILED(m_device->CreateBuffer(&bufferDesc, &data, m_model.indexBuffer.GetAddressOf()),
+            "Failed to create index buffer");
+    }
     // sphere
     const auto sphere = CreateSphereMesh();
     {
@@ -531,8 +595,7 @@ void D3d11RendererImpl::createGeometries()
         bufferDesc.CPUAccessFlags = 0;
         bufferDesc.MiscFlags = 0;
 
-        D3D11_SUBRESOURCE_DATA data;
-        ZeroMemory(&data, sizeof(D3D11_SUBRESOURCE_DATA));
+        D3D11_SUBRESOURCE_DATA data {};
         data.pSysMem = sphere.vertices.data();
         D3D_THROW_IF_FAILED(m_device->CreateBuffer(&bufferDesc, &data, m_sphere.vertexBuffer.GetAddressOf()),
             "Failed to create vertex buffer");
@@ -540,16 +603,14 @@ void D3d11RendererImpl::createGeometries()
     {
         // index buffer
         m_sphere.indexCount = static_cast<uint32_t>(3 * sphere.indices.size());
-        D3D11_BUFFER_DESC bufferDesc;
-        ZeroMemory(&bufferDesc, sizeof(D3D11_BUFFER_DESC));
+        D3D11_BUFFER_DESC bufferDesc {};
         bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
         bufferDesc.ByteWidth = static_cast<uint32_t>(sizeof(uvec3) * sphere.indices.size());
         bufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
         bufferDesc.CPUAccessFlags = 0;
         bufferDesc.MiscFlags = 0;
 
-        D3D11_SUBRESOURCE_DATA data;
-        ZeroMemory(&data, sizeof(D3D11_SUBRESOURCE_DATA));
+        D3D11_SUBRESOURCE_DATA data {};
         data.pSysMem = sphere.indices.data();
         D3D_THROW_IF_FAILED(m_device->CreateBuffer(&bufferDesc, &data, m_sphere.indexBuffer.GetAddressOf()),
             "Failed to create index buffer");
@@ -627,18 +688,8 @@ void D3d11RendererImpl::createGeometries()
     }
 }
 
-void D3d11RendererImpl::createTexture2D(ComPtr<ID3D11ShaderResourceView>& srv, const Image& image, DXGI_FORMAT internalFormat)
+void D3d11RendererImpl::createTexture2D(ComPtr<ID3D11ShaderResourceView>& srv, const Image& image, DXGI_FORMAT format)
 {
-    DXGI_FORMAT format;
-    switch (image.component)
-    {
-        case 4: format = DXGI_FORMAT_R32G32B32A32_FLOAT; break;
-        case 3: format = DXGI_FORMAT_R32G32B32_FLOAT; break;
-        case 2: format = DXGI_FORMAT_R32G32_FLOAT; break;
-        default:
-            THROW_EXCEPTION("[texture] Unsupported image format, image has component " + std::to_string(image.component));
-    }
-
     D3D11_TEXTURE2D_DESC textureDesc {};
     textureDesc.Width = image.width;
     textureDesc.Height = image.height;
@@ -654,7 +705,9 @@ void D3d11RendererImpl::createTexture2D(ComPtr<ID3D11ShaderResourceView>& srv, c
 
     D3D11_SUBRESOURCE_DATA textureData {};
     textureData.pSysMem = image.buffer.pData;
-    textureData.SysMemPitch = image.width * image.component * sizeof(float);
+    textureData.SysMemPitch = image.width * image.component;
+    if (image.dataType == DataType::FLOAT_32T)
+        textureData.SysMemPitch *= sizeof(float);
     textureData.SysMemSlicePitch = image.height * textureData.SysMemPitch;
 
     ComPtr<ID3D11Texture2D> texture;

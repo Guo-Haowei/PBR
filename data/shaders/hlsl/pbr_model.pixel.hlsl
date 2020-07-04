@@ -4,8 +4,8 @@
 struct out_vs
 {
     float4 sv_position : SV_POSITION;
-    float4 position : POSITION; // pack metallic in w component
-    float4 normal : NORMAL; // pack roughess in w component
+    float3 position : POSITION; // pack metallic in w component
+    float3 normal : NORMAL; // pack roughess in w component
     float2 uv : TEXCOORD;
 };
 
@@ -28,6 +28,9 @@ cbuffer PerFrameBuffer : register(b1)
 Texture2D brdfLut : register(t1);
 TextureCube specularMap : register(t2);
 TextureCube irradianceMap : register(t3);
+Texture2D albedoMap : register(t4);
+Texture2D metallicMap : register(t5);
+Texture2D roughnessMap : register(t6);
 
 SamplerState g_sampler : register(s0);
 SamplerState g_samplerLod : register(s1);
@@ -86,18 +89,19 @@ float3 mix(float3 x, float3 y, float a)
     return (1.0 - a) * x + a * y;
 }
 
-static const float3 albedo = 1.0;
 static const float ao = 1.0;
 
 float4 ps_main(out_vs input) : SV_TARGET
 {
     float3 position = input.position.xyz;
-    float metallic = input.position.w;
-    float roughness = input.normal.w;
+    float metallic = metallicMap.Sample(g_sampler, input.uv).r;
+    float roughness = roughnessMap.Sample(g_sampler, input.uv).r;
+    float3 albedo = albedoMap.Sample(g_sampler, input.uv).rgb;
 
     float3 N = normalize(input.normal.xyz);
     float3 V = normalize(view_position.xyz - position);
     float3 R = reflect(-V, N);
+
 
     // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0
     // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)
