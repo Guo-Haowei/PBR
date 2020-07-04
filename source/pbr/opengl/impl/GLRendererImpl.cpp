@@ -144,12 +144,12 @@ void GLRendererImpl::PrepareGpuResources()
 
     // metallic
     auto metallicImage = utility::ReadPng(CERBERUS_DIR "Cerberus_M.png");
-    m_metallicTexture = CreateTexture(metallicImage, GL_RED);
+    m_metallicTexture = CreateTexture(metallicImage, GL_R8);
     free(metallicImage.buffer.pData);
 
     // roughness
     auto roughnessImage = utility::ReadPng(CERBERUS_DIR "Cerberus_R.png");
-    m_roughnessTexture = CreateTexture(roughnessImage, GL_RED);
+    m_roughnessTexture = CreateTexture(roughnessImage, GL_R8);
     free(roughnessImage.buffer.pData);
 
     // load hdr texture
