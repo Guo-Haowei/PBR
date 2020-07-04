@@ -1,4 +1,5 @@
 #include "ModelLoader.h"
+#include "base/Error.h"
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
@@ -6,7 +7,9 @@
 #include <iostream>
 #include <stdexcept>
 #include <assert.h>
-using namespace std;
+#include <fstream>
+using std::string;
+using std::ifstream;
 
 namespace pbr {
 
@@ -18,7 +21,7 @@ Mesh ModelLoader::load(const char* path)
     const aiScene* aiscene = importer.ReadFile(fullpath,
         aiProcess_Triangulate |
         // aiProcess_FlipUVs |
-        //aiProcess_GenSmoothNormals |
+        aiProcess_GenSmoothNormals |
         aiProcess_JoinIdenticalVertices
     );
 
@@ -26,7 +29,7 @@ Mesh ModelLoader::load(const char* path)
     {
         std::cout << "[ERROR] assimp failed to load.";
         std::cout << importer.GetErrorString() << std::endl;
-        throw runtime_error("Failed to parse scene " + fullpath);
+        throw std::runtime_error("Failed to parse scene " + fullpath);
     }
 
     assert(aiscene->mNumMeshes);

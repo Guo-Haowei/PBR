@@ -7,7 +7,6 @@
 #include "Scene.h"
 #include "Global.h"
 #include "Paths.h"
-#include "ModelLoader.h"
 #if TARGET_PLATFORM == PLATFORM_EMSCRIPTEN
 #   include "shaders.generated.h"
 #endif
@@ -406,8 +405,7 @@ void GLRendererImpl::createGeometries()
     }
     {
         // load model
-        ModelLoader loader;
-        auto model = loader.load(CERBERUS_DIR "Cerberus_LP.FBX");
+        auto model = utility::LoadModel(CERBERUS_DIR "Cerberus");
 
         m_model.indexCount = static_cast<uint32_t>(3 * model.indices.size());
         glGenVertexArrays(1, &m_model.vao);

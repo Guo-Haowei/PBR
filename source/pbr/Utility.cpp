@@ -10,6 +10,52 @@ using std::ios;
 
 namespace pbr { namespace utility {
 
+Mesh LoadModel(const char* path)
+{
+    std::cout << "--------------------------------------------\n";
+    std::cout << "[Log] start loading model \"" << path << "\"\n";
+
+    string txtpath(path); txtpath.append(".txt");
+    string binpath(path); binpath.append(".bin");
+    ifstream txt(txtpath);
+    if (!txt.is_open())
+        THROW_EXCEPTION("Failed to open file \"" + txtpath + "\"");
+
+    ifstream bin(binpath, std::ios_base::out | std::ios::binary);
+    if (!bin.is_open())
+        THROW_EXCEPTION("Failed to open file \"" + binpath + "\"");
+
+    // dummy loader
+    Mesh mesh;
+    string str;
+    int counter = 0;
+    while (txt >> str)
+    {
+        if (str == "size")
+        {
+            int size; txt >> size;
+            if (counter == 0)
+            {
+                mesh.indices.resize(size / sizeof(uvec3));
+                bin.read(reinterpret_cast<char*>(mesh.indices.data()), size);
+            }
+            else
+            {
+                mesh.vertices.resize(size / sizeof(Vertex));
+                bin.read(reinterpret_cast<char*>(mesh.vertices.data()), size);
+            }
+            ++counter;
+        }
+    }
+
+    std::cout << "[Log] finished loading model\n";
+    std::cout << "--------------------------------------------\n" << std::flush;
+
+    txt.close();
+    bin.close();
+
+    return mesh;
+}
 string ReadAsciiFile(const char* path)
 {
     ifstream f(path);

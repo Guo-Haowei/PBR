@@ -1,5 +1,6 @@
 #pragma once
 #include "base/Definitions.h"
+#include "Mesh.h"
 
 namespace pbr { namespace utility {
     extern string ReadAsciiFile(const char* path);
@@ -13,4 +14,5 @@ namespace pbr { namespace utility {
     extern Image ReadBrdfLUT(const char* path, int size);
     extern Image ReadBrdfLUT(const string& path, int size);
     extern bool IsNaN(const mat4& m);
+    extern Mesh LoadModel(const char* path);
 } } // namespace pbr::utility
