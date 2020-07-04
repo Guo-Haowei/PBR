@@ -1,21 +1,26 @@
 # PBR
 
+[Live Demo](http://guo-haowei.github.io/pages/pbr/index.html) (generated with emscripten)
+
 Physically Based Rendering with multiple Graphics APIs
-
-## TODO
-
-Generate BRDF LUT
 
 ## Graphics APIs
 
 API           | Implementation
 --------------|----------------------
-OpenGL 4.0    | In progress
-OpenGL ES 3.0 | In progress
-Direct3D 11   | In progress
-<!-- Direct3D 12 | In progress -->
+OpenGL 4.0    | Done
+OpenGL ES 3.0 | Done
+Direct3D 11   | Done
+Direct3D 12   | Planning
 <!-- Vulkan      | In progress -->
 <!-- Metal       | In progress -->
+
+## Screenshots
+
+<img src="https://github.com/Guo-Haowei/PBR/blob/master/data/images/image1.png" width="70%">
+<img src="https://github.com/Guo-Haowei/PBR/blob/master/data/images/image2.png" width="70%">
+<img src="https://github.com/Guo-Haowei/PBR/blob/master/data/images/image3.png" width="70%">
+<img src="https://github.com/Guo-Haowei/PBR/blob/master/data/images/image4.png" width="70%">
 
 ## Reference
 
