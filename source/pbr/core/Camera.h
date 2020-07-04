@@ -46,10 +46,11 @@ namespace pbr {
         inline void SetCamera(Camera* pCamera) { m_pCamera = pCamera; }
         inline const Camera* GetCamera() const { return m_pCamera; }
         inline bool IsDirty() const { return m_dirty; }
-        static bool virtualPoint(const Extent2i& extent, const vec2& cursorPos, vec3& point);
+        static vec3 virtualPoint(const Extent2i& extent, const vec2& cursorPos);
     private:
         Camera* m_pCamera;
         bool m_dirty;
+        vec3 center { 0.0f };
     };
 
 } // namespace pbr
