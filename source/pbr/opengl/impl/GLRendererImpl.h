@@ -30,17 +30,22 @@ private:
 private:
     const Window*   m_pWindow;
     GlslProgram     m_pbrProgram;
+    GlslProgram     m_pbrModelProgram;
     GlslProgram     m_convertProgram;
     GlslProgram     m_irradianceProgram;
     GlslProgram     m_prefilterProgram;
     GlslProgram     m_backgroundProgram;
     PerDrawData     m_sphere;
     PerDrawData     m_cube;
+    PerDrawData     m_model;
     GLTexture       m_hdrTexture;
     GLTexture       m_brdfLUTTexture;
     GLTexture       m_cubeMapTexture;
     GLTexture       m_irradianceTexture;
     GLTexture       m_specularTexture;
+    GLTexture       m_albedoTexture;
+    GLTexture       m_roughnessTexture;
+    GLTexture       m_metallicTexture;
     GLFramebuffer   m_framebuffer;
 
     mat4            m_cubeMapPerspective;

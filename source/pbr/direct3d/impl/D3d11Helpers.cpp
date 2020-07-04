@@ -1,5 +1,6 @@
 #include "D3d11Helpers.h"
 #include "D3dDebug.h"
+#include "Paths.h"
 #include <d3dcompiler.h>
 
 namespace pbr { namespace d3d11 {

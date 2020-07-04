@@ -86,7 +86,7 @@ float3 mix(float3 x, float3 y, float a)
     return (1.0 - a) * x + a * y;
 }
 
-static const float3 albedo = 0.5;
+static const float3 albedo = 1.0;
 static const float ao = 1.0;
 
 float4 ps_main(out_vs input) : SV_TARGET
@@ -105,6 +105,7 @@ float4 ps_main(out_vs input) : SV_TARGET
 
     // reflectance equation
     float3 Lo = float3(0.0, 0.0, 0.0);
+#if 0
     for(int i = 0; i < MAX_LIGHT_COUNT; ++i)
     {
         float3 delta = g_lights[i].position.xyz - position;
@@ -139,6 +140,7 @@ float4 ps_main(out_vs input) : SV_TARGET
         // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
         Lo += (kD * albedo / PI + specular) * radiance * NdotL;
     }
+#endif
 
     // image based ambient lighting
     float3 F = FresnelSchlickRoughness(max(dot(N, V), 0.0), F0, roughness);

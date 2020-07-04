@@ -7,6 +7,8 @@ namespace pbr {
 
 void Window::Initialize(const WindowCreateInfo& info)
 {
+    m_keys.fill(0);
+
     m_renderApi = info.renderApi;
 
     glfwSetErrorCallback([](int error, const char* desc)
@@ -165,9 +167,16 @@ void Window::mouseCursorCallback(GLFWwindow* glfwWindow, double x, double y)
 
 void Window::keyCallback(GLFWwindow* glfwWindow, int key, int scan, int action, int mode)
 {
-    // Window* window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(glfwWindow));
+    Window* window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(glfwWindow));
     if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
         glfwSetWindowShouldClose(glfwWindow, true);
+    if (key < window->m_keys.size())
+    {
+        if (action == GLFW_RELEASE)
+            window->m_keys[key] = 0;
+        else if (action == GLFW_PRESS)
+            window->m_keys[key] = 1;
+    }
 }
 
 } // namespace pbr

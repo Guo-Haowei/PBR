@@ -43,6 +43,25 @@ vector<char> ReadBinaryFile(const string& path)
     return ReadBinaryFile(path.c_str());
 }
 
+Image ReadPng(const char* path)
+{
+    Image image;
+    unsigned char* data = stbi_load(path, &image.width, &image.height, &image.component, 0);
+    if (!data)
+        THROW_EXCEPTION("filesystem: Failed to open image '" + string(path) + "'");
+
+    image.buffer.pData = data;
+    image.buffer.sizeInByte = sizeof(unsigned char) * image.width * image.height * image.component;
+    image.dataType = DataType::UINT_8T;
+    return image;
+}
+
+Image ReadPng(const string& path)
+{
+    return ReadPng(path.c_str());
+}
+
+
 Image ReadHDRImage(const string& path)
 {
     return ReadHDRImage(path.c_str());

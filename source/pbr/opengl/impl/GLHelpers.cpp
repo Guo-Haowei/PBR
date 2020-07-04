@@ -12,6 +12,7 @@ GLTexture CreateTexture(const Image& image, GLenum internalFormat)
         case 4: imageFormat = GL_RGBA; break;
         case 3: imageFormat = GL_RGB; break;
         case 2: imageFormat = GL_RG; break;
+        case 1: imageFormat = GL_RED; break;
         default:
             THROW_EXCEPTION("[texture] Unsupported image format, image has component " + std::to_string(image.component));
     }
@@ -19,6 +20,7 @@ GLTexture CreateTexture(const Image& image, GLenum internalFormat)
     switch (image.dataType)
     {
         case DataType::FLOAT_32T: dataType = GL_FLOAT; break;
+        case DataType::UINT_8T: dataType = GL_UNSIGNED_BYTE; break;
         default:
             THROW_EXCEPTION("[texture] Unsupported image format, image invalid data type");
     }
@@ -77,8 +79,8 @@ void GlslProgram::destroy()
 GLint GlslProgram::getUniformLocation(const char* name) const
 {
     GLint location = glGetUniformLocation(m_handle, name);
-    if (location == INVALID_UNIFORM_LOCATION)
-        cout << "[Warning] uniform \"" << name << "\" not found" << endl;
+    // if (location == INVALID_UNIFORM_LOCATION)
+    //     cout << "[Warning] uniform \"" << name << "\" not found" << endl;
     return location;
 }
 

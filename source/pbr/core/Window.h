@@ -1,6 +1,7 @@
 #pragma once
 #include "base/Definitions.h"
 #include "base/Platform.h"
+#include "Keycode.h"
 #include <string>
 
 struct GLFWwindow;
@@ -31,6 +32,7 @@ public:
     inline void SetWindowExtent(const Extent2i& extent) { m_windowExtent = extent; }
     inline void SetFrameBufferExtent(const Extent2i& extent) { m_framebufferExtent = extent; }
     inline int IsButtonDown(GLFW_BUTTON button) const { return m_buttons[button]; }
+    inline int IsKeyDown(int key) const { return m_keys[key]; }
     inline const vec2& GetLastFrameCursorPos() const { return m_lastFrameCursorPos; }
     inline const vec2& GetThisFrameCursorPos() const { return m_thisFrameCursorPos; }
     inline double GetScroll() const { return m_scroll; }
@@ -43,15 +45,16 @@ private:
     static void mouseScrollCallback(GLFWwindow* glfwWindow, double x, double y);
     static void mouseCursorCallback(GLFWwindow* glfwWindow, double x, double y);
 private:
-    RenderApi           m_renderApi         = RenderApi::UNKNOWN;
-    GLFWwindow*         m_pWindow           = nullptr;
-    string              m_windowTitle;
-    Extent2i            m_windowExtent      = { 0, 0 };
-    Extent2i            m_framebufferExtent = { 0, 0 };
-    array<int, 3>       m_buttons           = { 0, 0, 0 };
-    double              m_scroll            = 0;
-    vec2                m_lastFrameCursorPos;
-    vec2                m_thisFrameCursorPos;
+    RenderApi               m_renderApi         = RenderApi::UNKNOWN;
+    GLFWwindow*             m_pWindow           = nullptr;
+    string                  m_windowTitle;
+    Extent2i                m_windowExtent      = { 0, 0 };
+    Extent2i                m_framebufferExtent = { 0, 0 };
+    array<int, 3>           m_buttons           = { 0, 0, 0 };
+    array<int, KEY_COUNT>   m_keys;
+    double                  m_scroll            = 0;
+    vec2                    m_lastFrameCursorPos;
+    vec2                    m_thisFrameCursorPos;
 };
 
 } // namespace pbr

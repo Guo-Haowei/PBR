@@ -5,9 +5,7 @@
 struct VS_OUT
 {
     vec3 position;
-    float metallic;
     vec3 normal;
-    float roughness;
     vec2 uv;
 };
 
@@ -29,6 +27,9 @@ uniform vec4 u_view_pos;
 uniform samplerCube u_irradiance_map;
 uniform samplerCube u_specular_map;
 uniform sampler2D u_brdf_lut;
+uniform sampler2D u_albedo;
+uniform sampler2D u_roughness;
+uniform sampler2D u_metallic;
 uniform int u_debug;
 
 // NDF(n, h, alpha) = alpha^2 / (pi * ((n dot h)^2 * (alpha^2 - 1) + 1)^2)
@@ -78,15 +79,16 @@ vec3 FresnelSchlickRoughness(float cosTheta, in vec3 F0, float roughness)
     return F0 + (max(vec3(1.0 - roughness) - F0, vec3(0.0))) * pow(1.0 - cosTheta, 5.0);
 }
 
-const vec3 albedo = vec3(1.0);
 const float ao = 1.0;
 
 void main()
 {
     // variables
     vec3 position = vs_pass.position;
-    float metallic = vs_pass.metallic;
-    float roughness = vs_pass.roughness;
+
+    vec3 albedo = texture(u_albedo, vs_pass.uv).rgb;
+    float metallic = texture(u_metallic, vs_pass.uv).r;
+    float roughness = texture(u_roughness, vs_pass.uv).r;
 
     vec3 N = normalize(vs_pass.normal);
     vec3 V = normalize(u_view_pos.xyz - position);
@@ -182,3 +184,4 @@ void main()
 
     out_color = vec4(color, 1.0);
 }
+

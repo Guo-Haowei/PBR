@@ -8,7 +8,8 @@
                 "${workspaceRoot}/external/glad/include",
                 "${workspaceRoot}/external/glfw/include",
                 "${workspaceRoot}/external/glm/",
-                "${workspaceRoot}/external/stb/"
+                "${workspaceRoot}/external/stb/",
+                "${workspaceRoot}/external/assimp/include"
             ],
             "defines": [
                 "DATA_DIR=\"\"",

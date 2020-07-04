@@ -8,6 +8,16 @@ ADD_LIBRARY(pbr
     main.cpp
 )
 
+IF (WIN32)
+    ADD_LIBRARY(loader ModelLoader.cpp)
+    TARGET_INCLUDE_DIRECTORIES(loader PRIVATE ${PROJECT_SOURCE_DIR}/external/assimp/include)
+    SET(lib_assimp_debug "${PROJECT_SOURCE_DIR}/external/assimp/build/lib/Debug/assimp-vc142-mtd.lib")
+    SET(lib_irrxmld_debug "${PROJECT_SOURCE_DIR}/external/assimp/build/lib/Debug/IrrXMLd.lib")
+    SET(lib_zlib_debug "${PROJECT_SOURCE_DIR}/external/assimp/build/lib/Debug/zlibstaticd.lib")
+    TARGET_LINK_LIBRARIES(loader debug ${lib_assimp_debug} ${lib_irrxmld_debug} ${lib_zlib_debug})
+    TARGET_LINK_LIBRARIES(pbr PRIVATE loader)
+ENDIF ()
+
 IF (OPENGL_RENDERER)
     ADD_SUBDIRECTORY(opengl)
     TARGET_LINK_LIBRARIES(pbr PRIVATE gl_renderer)

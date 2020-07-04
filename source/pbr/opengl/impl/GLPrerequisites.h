@@ -12,7 +12,3 @@
 #include <GLFW/glfw3.h>
 
 #define PBR_GL_VERSION (PBR_GL_VERSION_MAJOR * 100 + PBR_GL_VERSION_MINOR * 10)
-
-#define GLSL_DIR DATA_DIR "shaders/glsl/"
-#define DEFAULT_HDR_ENV_MAP DATA_DIR "preload/circus.hdr"
-#define BRDF_LUT DATA_DIR "preload/brdf.bin"

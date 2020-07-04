@@ -80,7 +80,7 @@ Mesh CreateSphereMesh(float radius, uint32_t widthSegment, uint32_t heightSegmen
 
             vec3 p { x, y, z };
 
-            sphere.vertices.push_back(Vertex(p, vec2(u, v), glm::normalize(p)));
+            sphere.vertices.push_back({ p, vec2(u, v), glm::normalize(p) });
             grid.back().push_back(index++);
         }
     }

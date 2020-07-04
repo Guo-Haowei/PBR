@@ -14,11 +14,6 @@ struct Vertex
     vec3 position;
     vec2 uv;
     vec3 normal;
-
-    Vertex(const vec3& pos, const vec2& uv, const vec3& normal)
-        : position(pos), uv(uv), normal(normal)
-    {
-    }
 };
 
 struct Mesh

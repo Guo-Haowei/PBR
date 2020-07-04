@@ -7,7 +7,3 @@
 namespace pbr { namespace d3d11 {
     using Microsoft::WRL::ComPtr;
 } } // namespace pbr::d3d11
-
-#define HLSL_DIR DATA_DIR "shaders/hlsl/"
-#define DEFAULT_HDR_ENV_MAP DATA_DIR "preload/circus.hdr"
-#define BRDF_LUT DATA_DIR "preload/brdf.bin"
