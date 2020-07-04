@@ -54,11 +54,7 @@ void GLRendererImpl::DumpGraphicsCardInfo()
 
 void GLRendererImpl::Render(const Camera& camera)
 {
-    // set viewport
-    const Extent2i& extent = m_pWindow->GetFrameBufferExtent();
-    glViewport(0, 0, extent.width, extent.height);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+    // TODO: refactor
     static int debug = 0;
     if (m_pWindow->IsKeyDown(KEY_0)) // pbr
         debug = 0;
@@ -70,6 +66,11 @@ void GLRendererImpl::Render(const Camera& camera)
         debug = 3;
     else if (m_pWindow->IsKeyDown(KEY_4)) // roughness
         debug = 4;
+
+    // set viewport
+    const Extent2i& extent = m_pWindow->GetFrameBufferExtent();
+    glViewport(0, 0, extent.width, extent.height);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // draw spheres
     m_pbrProgram.use();
@@ -146,6 +147,11 @@ void GLRendererImpl::PrepareGpuResources()
     auto roughnessImage = utility::ReadPng(CERBERUS_DIR "Cerberus_R.png");
     m_roughnessTexture = CreateTexture(roughnessImage, GL_R8);
     free(roughnessImage.buffer.pData);
+
+    // normal
+    auto normalImage = utility::ReadPng(CERBERUS_DIR "Cerberus_N.png");
+    m_normalTexture = CreateTexture(normalImage, GL_RGB);
+    free(normalImage.buffer.pData);
 
     // load hdr texture
     auto envImage = utility::ReadHDRImage(DEFAULT_HDR_ENV_MAP);
@@ -365,25 +371,6 @@ void GLRendererImpl::compileShaders()
 void GLRendererImpl::createGeometries()
 {
     {
-        // sphere
-        const auto sphere = CreateSphereMesh();
-        m_sphere.indexCount = static_cast<uint32_t>(3 * sphere.indices.size());
-        glGenVertexArrays(1, &m_sphere.vao);
-        glBindVertexArray(m_sphere.vao);
-        glGenBuffers(2, &m_sphere.vbo);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_sphere.ebo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sphere.indices.size() * sizeof(uvec3), sphere.indices.data(), GL_STATIC_DRAW);
-        // vertices
-        glBindBuffer(GL_ARRAY_BUFFER, m_sphere.vbo);
-        glBufferData(GL_ARRAY_BUFFER, sphere.vertices.size() * sizeof(Vertex), sphere.vertices.data(), GL_STATIC_DRAW);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv));
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
-        glEnableVertexAttribArray(2);
-    }
-    {
         // cube
         const auto cube = CreateCubeMesh(1.0f);
         m_cube.indexCount = static_cast<uint32_t>(3 * cube.indices.size());
@@ -399,6 +386,23 @@ void GLRendererImpl::createGeometries()
         glEnableVertexAttribArray(0);
     }
     {
+        // sphere
+        const auto sphere = CreateSphereMesh();
+        m_sphere.indexCount = static_cast<uint32_t>(3 * sphere.indices.size());
+        glGenVertexArrays(1, &m_sphere.vao);
+        glBindVertexArray(m_sphere.vao);
+        glGenBuffers(2, &m_sphere.vbo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_sphere.ebo);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sphere.indices.size() * sizeof(uvec3), sphere.indices.data(), GL_STATIC_DRAW);
+        // vertices
+        glBindBuffer(GL_ARRAY_BUFFER, m_sphere.vbo);
+        glBufferData(GL_ARRAY_BUFFER, sphere.vertices.size() * sizeof(Vertex), sphere.vertices.data(), GL_STATIC_DRAW);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+        glEnableVertexAttribArray(1);
+    }
+    {
         // load model
         auto model = utility::LoadModel(CERBERUS_DIR "Cerberus");
 
@@ -410,13 +414,17 @@ void GLRendererImpl::createGeometries()
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, model.indices.size() * sizeof(uvec3), model.indices.data(), GL_STATIC_DRAW);
         // vertices
         glBindBuffer(GL_ARRAY_BUFFER, m_model.vbo);
-        glBufferData(GL_ARRAY_BUFFER, model.vertices.size() * sizeof(Vertex), model.vertices.data(), GL_STATIC_DRAW);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
+        glBufferData(GL_ARRAY_BUFFER, model.vertices.size() * sizeof(TexturedVertex), model.vertices.data(), GL_STATIC_DRAW);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(TexturedVertex), (void*)offsetof(TexturedVertex, position));
         glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, uv));
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(TexturedVertex), (void*)offsetof(TexturedVertex, uv));
         glEnableVertexAttribArray(1);
-        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(TexturedVertex), (void*)offsetof(TexturedVertex, normal));
         glEnableVertexAttribArray(2);
+        glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(TexturedVertex), (void*)offsetof(TexturedVertex, tangent));
+        glEnableVertexAttribArray(3);
+        glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(TexturedVertex), (void*)offsetof(TexturedVertex, bitangent));
+        glEnableVertexAttribArray(4);
     }
 }
 
@@ -464,6 +472,7 @@ void GLRendererImpl::uploadConstantUniforms()
     m_pbrModelProgram.setUniform("u_albedo", 4);
     m_pbrModelProgram.setUniform("u_metallic", 5);
     m_pbrModelProgram.setUniform("u_roughness", 6);
+    m_pbrModelProgram.setUniform("u_normal", 7);
 
     m_backgroundProgram.use();
     m_backgroundProgram.setUniform("u_env_map", 0);
@@ -488,6 +497,9 @@ void GLRendererImpl::uploadConstantUniforms()
 
     glActiveTexture(GL_TEXTURE6); // roughness
     glBindTexture(GL_TEXTURE_2D, m_roughnessTexture.handle);
+
+    glActiveTexture(GL_TEXTURE7); // roughness
+    glBindTexture(GL_TEXTURE_2D, m_normalTexture.handle);
 }
 
 } } // namespace pbr::gl

@@ -36,7 +36,7 @@ void D3d11RendererImpl::Finalize()
 void D3d11RendererImpl::renderSpheres()
 {
     // set input layout
-    m_deviceContext->IASetInputLayout(m_sphereLayout.Get());
+    m_deviceContext->IASetInputLayout(m_meshLayout.Get());
     // set vertex/index buffer
     UINT stride = sizeof(Vertex), offset = 0;
     m_deviceContext->IASetVertexBuffers(0, 1, m_sphere.vertexBuffer.GetAddressOf(), &stride, &offset);
@@ -49,9 +49,9 @@ void D3d11RendererImpl::renderSpheres()
 void D3d11RendererImpl::renderModel()
 {
     // set input layout
-    m_deviceContext->IASetInputLayout(m_sphereLayout.Get());
+    m_deviceContext->IASetInputLayout(m_texturedMeshLayout.Get());
     // set vertex/index buffer
-    UINT stride = sizeof(Vertex), offset = 0;
+    UINT stride = sizeof(TexturedVertex), offset = 0;
     m_deviceContext->IASetVertexBuffers(0, 1, m_model.vertexBuffer.GetAddressOf(), &stride, &offset);
     m_deviceContext->IASetIndexBuffer(m_model.indexBuffer.Get(), DXGI_FORMAT_R32_UINT, 0);
     // draw
@@ -79,12 +79,26 @@ void D3d11RendererImpl::setSrvAndSamplers()
     m_deviceContext->PSSetShaderResources(4, 1, m_albedo.GetAddressOf());
     m_deviceContext->PSSetShaderResources(5, 1, m_metallic.GetAddressOf());
     m_deviceContext->PSSetShaderResources(6, 1, m_roughness.GetAddressOf());
+    m_deviceContext->PSSetShaderResources(7, 1, m_normal.GetAddressOf());
     m_deviceContext->PSSetSamplers(0, 1, m_sampler.GetAddressOf());
     m_deviceContext->PSSetSamplers(1, 1, m_samplerLod.GetAddressOf());
 }
 
 void D3d11RendererImpl::Render(const Camera& camera)
 {
+    // TODO: refactor
+    static int debug = 0;
+    if (m_pWindow->IsKeyDown(KEY_0)) // pbr
+        debug = 0;
+    else if (m_pWindow->IsKeyDown(KEY_1)) // albedo
+        debug = 1;
+    else if (m_pWindow->IsKeyDown(KEY_2)) // normal
+        debug = 2;
+    else if (m_pWindow->IsKeyDown(KEY_3)) // metallic
+        debug = 3;
+    else if (m_pWindow->IsKeyDown(KEY_4)) // roughness
+        debug = 4;
+
     // set render target
     m_deviceContext->OMSetRenderTargets(1, m_immediate.rtv.GetAddressOf(), m_immediate.dsv.Get());
     // set viewport
@@ -102,10 +116,12 @@ void D3d11RendererImpl::Render(const Camera& camera)
         m_perFrameBuffer.m_cache.projection = camera.ProjectionMatrixD3d();
         m_perFrameBuffer.Update(m_deviceContext);
         m_perFrameBuffer.VSSet(m_deviceContext, 1);
-        m_viewPositionBuffer.m_cache.view_position = camera.GetViewPos();
-        m_viewPositionBuffer.Update(m_deviceContext);
-        m_viewPositionBuffer.PSSet(m_deviceContext, 1);
     }
+
+    m_viewPositionBuffer.m_cache.view_position = vec3(camera.GetViewPos());
+    m_viewPositionBuffer.m_cache.padding = debug;
+    m_viewPositionBuffer.Update(m_deviceContext);
+    m_viewPositionBuffer.PSSet(m_deviceContext, 1);
 
     // render spheres
     m_pbrProgram.set(m_deviceContext);
@@ -247,6 +263,10 @@ void D3d11RendererImpl::PrepareGpuResources()
     auto roughnessImage = utility::ReadPng(CERBERUS_DIR "Cerberus_R.png");
     createTexture2D(m_roughness, roughnessImage, DXGI_FORMAT_R8_UNORM);
     free(roughnessImage.buffer.pData);
+    // normal
+    auto normalImage = utility::ReadPng(CERBERUS_DIR "Cerberus_N.png", 4);
+    createTexture2D(m_normal, normalImage, DXGI_FORMAT_R8G8B8A8_UNORM);
+    free(normalImage.buffer.pData);
 
     // constant buffer
     m_perFrameBuffer.Create(m_device);
@@ -559,7 +579,7 @@ void D3d11RendererImpl::createGeometries()
         // vertex buffer
         D3D11_BUFFER_DESC bufferDesc {};
         bufferDesc.Usage = D3D11_USAGE_IMMUTABLE;
-        bufferDesc.ByteWidth = static_cast<uint32_t>(sizeof(Vertex) * model.vertices.size());
+        bufferDesc.ByteWidth = static_cast<uint32_t>(sizeof(TexturedVertex) * model.vertices.size());
         bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
         bufferDesc.CPUAccessFlags = 0;
         bufferDesc.MiscFlags = 0;
@@ -583,6 +603,27 @@ void D3d11RendererImpl::createGeometries()
         data.pSysMem = model.indices.data();
         D3D_THROW_IF_FAILED(m_device->CreateBuffer(&bufferDesc, &data, m_model.indexBuffer.GetAddressOf()),
             "Failed to create index buffer");
+    }
+    {
+        // input layout
+        D3D11_INPUT_ELEMENT_DESC inputElementDescs[] =
+        {
+            { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(TexturedVertex, position), D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(TexturedVertex, uv), D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(TexturedVertex, normal), D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            { "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(TexturedVertex, tangent), D3D11_INPUT_PER_VERTEX_DATA, 0 },
+            { "BITANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(TexturedVertex, bitangent), D3D11_INPUT_PER_VERTEX_DATA, 0 },
+        };
+
+        HRESULT hr = m_device->CreateInputLayout(
+            inputElementDescs,
+            ARRAYSIZE(inputElementDescs),
+            m_pbrModelProgram.vertShaderBlob->GetBufferPointer(),
+            m_pbrModelProgram.vertShaderBlob->GetBufferSize(),
+            m_texturedMeshLayout.GetAddressOf()
+        );
+
+        D3D_THROW_IF_FAILED(hr, "Failed to model sphere input layout");
     }
     // sphere
     const auto sphere = CreateSphereMesh();
@@ -620,7 +661,6 @@ void D3d11RendererImpl::createGeometries()
         D3D11_INPUT_ELEMENT_DESC inputElementDescs[] =
         {
             { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(Vertex, position), D3D11_INPUT_PER_VERTEX_DATA, 0 },
-            { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(Vertex, uv), D3D11_INPUT_PER_VERTEX_DATA, 0 },
             { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(Vertex, normal), D3D11_INPUT_PER_VERTEX_DATA, 0 },
         };
 
@@ -629,7 +669,7 @@ void D3d11RendererImpl::createGeometries()
             ARRAYSIZE(inputElementDescs),
             m_pbrProgram.vertShaderBlob->GetBufferPointer(),
             m_pbrProgram.vertShaderBlob->GetBufferSize(),
-            m_sphereLayout.GetAddressOf()
+            m_meshLayout.GetAddressOf()
         );
 
         D3D_THROW_IF_FAILED(hr, "Failed to create sphere input layout");

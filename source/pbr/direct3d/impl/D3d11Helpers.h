@@ -35,7 +35,8 @@ struct LightDataCache
 
 struct ViewPositionCache
 {
-    vec4 view_position;
+    vec3 view_position;
+    int padding;
 };
 
 static_assert(sizeof(LightDataCache) == 4 * 2 * sizeof(vec4));

@@ -5,8 +5,8 @@
 struct VS_OUT
 {
     vec3 position;
-    vec3 normal;
     vec2 uv;
+    mat3 TBN;
 };
 
 in VS_OUT vs_pass;
@@ -30,6 +30,7 @@ uniform sampler2D u_brdf_lut;
 uniform sampler2D u_albedo;
 uniform sampler2D u_roughness;
 uniform sampler2D u_metallic;
+uniform sampler2D u_normal;
 uniform int u_debug;
 
 // NDF(n, h, alpha) = alpha^2 / (pi * ((n dot h)^2 * (alpha^2 - 1) + 1)^2)
@@ -90,7 +91,10 @@ void main()
     float metallic = texture(u_metallic, vs_pass.uv).r;
     float roughness = texture(u_roughness, vs_pass.uv).r;
 
-    vec3 N = normalize(vs_pass.normal);
+    vec3 N = texture(u_normal, vs_pass.uv).rgb;
+    N = 2.0 * N - 1.0;
+    N = normalize(vs_pass.TBN * N);
+
     vec3 V = normalize(u_view_pos.xyz - position);
     vec3 R = reflect(-V, N);
 

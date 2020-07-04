@@ -7,6 +7,7 @@ struct out_vs
     float3 position : POSITION; // pack metallic in w component
     float3 normal : NORMAL; // pack roughess in w component
     float2 uv : TEXCOORD;
+    float3x3 TBN : TBN;
 };
 
 struct Light
@@ -22,7 +23,8 @@ cbuffer LightBuffer: register(b0)
 
 cbuffer PerFrameBuffer : register(b1)
 {
-    float4 view_position;
+    float3 view_position;
+    int debug;
 };
 
 Texture2D brdfLut : register(t1);
@@ -31,6 +33,7 @@ TextureCube irradianceMap : register(t3);
 Texture2D albedoMap : register(t4);
 Texture2D metallicMap : register(t5);
 Texture2D roughnessMap : register(t6);
+Texture2D normalMap : register(t7);
 
 SamplerState g_sampler : register(s0);
 SamplerState g_samplerLod : register(s1);
@@ -98,10 +101,22 @@ float4 ps_main(out_vs input) : SV_TARGET
     float roughness = roughnessMap.Sample(g_sampler, input.uv).r;
     float3 albedo = albedoMap.Sample(g_sampler, input.uv).rgb;
 
-    float3 N = normalize(input.normal.xyz);
-    float3 V = normalize(view_position.xyz - position);
+    float3 N = normalMap.Sample(g_sampler, input.uv).rgb;
+    N = 2.0 * N - 1.0;
+    // N = normalize(mul(N, input.TBN));
+    N = normalize(mul(input.TBN, N));
+
+    float3 V = normalize(view_position - position);
     float3 R = reflect(-V, N);
 
+    if (debug == 1)
+        return float4(albedo, 1.0);
+    else if (debug == 2)
+        return float4(N, 1.0);
+    else if (debug == 3)
+        return float4(metallic, metallic, metallic, 1.0);
+    else if (debug == 4)
+        return float4(roughness, roughness, roughness, 1.0);
 
     // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0
     // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)

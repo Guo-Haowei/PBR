@@ -3,5 +3,5 @@ index {
 }
 
 vertex {
-    size  855296
+    size  1682856
 }

@@ -8,7 +8,6 @@ struct VS_OUT
     float metallic;
     vec3 normal;
     float roughness;
-    vec2 uv;
 };
 
 in VS_OUT vs_pass;

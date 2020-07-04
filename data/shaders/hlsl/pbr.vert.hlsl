@@ -1,7 +1,6 @@
 struct in_vs
 {
     float3 position : POSITION;
-    float2 uv : TEXCOORD;
     float3 normal : NORMAL;
 };
 
@@ -10,7 +9,6 @@ struct out_vs
     float4 sv_position : SV_POSITION;
     float4 position : POSITION; // pack metallic in w component
     float4 normal : NORMAL; // pack roughess in w component
-    float2 uv : TEXCOORD;
 };
 
 cbuffer PerObjectBuffer : register(b0)
@@ -39,7 +37,6 @@ out_vs vs_main(in_vs input, uint id : SV_InstanceID)
     float4 world_position = float4(input.position + offset, 1.0);
     output.position.xyz = world_position.xyz;
     output.normal.xyz = input.normal;
-    output.uv = input.uv;
 
     output.sv_position = mul(projection, mul(view, world_position));
     return output;

@@ -6,7 +6,6 @@ struct out_vs
     float4 sv_position : SV_POSITION;
     float4 position : POSITION; // pack metallic in w component
     float4 normal : NORMAL; // pack roughess in w component
-    float2 uv : TEXCOORD;
 };
 
 struct Light
@@ -22,7 +21,8 @@ cbuffer LightBuffer: register(b0)
 
 cbuffer PerFrameBuffer : register(b1)
 {
-    float4 view_position;
+    float3 view_position;
+    int debug;
 };
 
 Texture2D brdfLut : register(t1);
@@ -96,8 +96,17 @@ float4 ps_main(out_vs input) : SV_TARGET
     float roughness = input.normal.w;
 
     float3 N = normalize(input.normal.xyz);
-    float3 V = normalize(view_position.xyz - position);
+    float3 V = normalize(view_position - position);
     float3 R = reflect(-V, N);
+
+    if (debug == 1)
+        return float4(albedo, 1.0);
+    else if (debug == 2)
+        return float4(N, 1.0);
+    else if (debug == 3)
+        return float4(metallic, metallic, metallic, 1.0);
+    else if (debug == 4)
+        return float4(roughness, roughness, roughness, 1.0);
 
     // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0
     // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)

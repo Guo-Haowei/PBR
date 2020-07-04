@@ -14,5 +14,5 @@ namespace pbr { namespace utility {
     extern Image ReadBrdfLUT(const char* path, int size);
     extern Image ReadBrdfLUT(const string& path, int size);
     extern bool IsNaN(const mat4& m);
-    extern Mesh LoadModel(const char* path);
+    extern TexturedMesh LoadModel(const char* path);
 } } // namespace pbr::utility

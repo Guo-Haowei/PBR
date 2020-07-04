@@ -53,16 +53,17 @@ private:
     HlslProgram                         m_irradianceProgram;
     HlslProgram                         m_prefilterProgram;
     HlslProgram                         m_backgroundProgram;
-    // input
-    ComPtr<ID3D11Buffer>                m_constantBuffer;
+    // input layout
+    ComPtr<ID3D11InputLayout>           m_cubeLayout;
+    ComPtr<ID3D11InputLayout>           m_meshLayout;
+    ComPtr<ID3D11InputLayout>           m_texturedMeshLayout;
     // buffers
+    ComPtr<ID3D11Buffer>                m_constantBuffer;
     PerFrameBuffer                      m_perFrameBuffer;
     PerDrawBuffer                       m_perDrawBuffer;
     LightBuffer                         m_lightBuffer;
     ViewPositionBuffer                  m_viewPositionBuffer;
-    ComPtr<ID3D11InputLayout>           m_cubeLayout;
     PerDrawData                         m_cube;
-    ComPtr<ID3D11InputLayout>           m_sphereLayout;
     PerDrawData                         m_sphere;
     PerDrawData                         m_model;
     // rasterizer
@@ -75,6 +76,7 @@ private:
     ComPtr<ID3D11ShaderResourceView>    m_albedo;
     ComPtr<ID3D11ShaderResourceView>    m_metallic;
     ComPtr<ID3D11ShaderResourceView>    m_roughness;
+    ComPtr<ID3D11ShaderResourceView>    m_normal;
     CubemapTexture                      m_environmentMap;
     CubemapTexture                      m_irradianceMap;
     CubemapTexture                      m_specularMap;

@@ -10,7 +10,7 @@ using std::ios;
 
 namespace pbr { namespace utility {
 
-Mesh LoadModel(const char* path)
+TexturedMesh LoadModel(const char* path)
 {
     std::cout << "--------------------------------------------\n";
     std::cout << "[Log] start loading model \"" << path << "\"\n";
@@ -26,7 +26,7 @@ Mesh LoadModel(const char* path)
         THROW_EXCEPTION("Failed to open file \"" + binpath + "\"");
 
     // dummy loader
-    Mesh mesh;
+    TexturedMesh mesh;
     string str;
     int counter = 0;
     while (txt >> str)
@@ -41,7 +41,7 @@ Mesh LoadModel(const char* path)
             }
             else
             {
-                mesh.vertices.resize(size / sizeof(Vertex));
+                mesh.vertices.resize(size / sizeof(TexturedVertex));
                 bin.read(reinterpret_cast<char*>(mesh.vertices.data()), size);
             }
             ++counter;

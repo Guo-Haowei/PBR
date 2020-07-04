@@ -3,10 +3,10 @@
 
 namespace pbr {
 
-class ModelLoader
+class AssimpLoader
 {
 public:
-    Mesh load(const char* path);
+    TexturedMesh load(const char* path);
 private:
 };
 

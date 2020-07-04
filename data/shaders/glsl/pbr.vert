@@ -1,7 +1,6 @@
 #version 410 core
 layout (location = 0) in vec3 in_position;
-layout (location = 1) in vec2 in_uv;
-layout (location = 2) in vec3 in_normal;
+layout (location = 1) in vec3 in_normal;
 
 struct VS_OUT
 {
@@ -9,7 +8,6 @@ struct VS_OUT
     float metallic;
     vec3 normal;
     float roughness;
-    vec2 uv;
 };
 
 out VS_OUT vs_pass;
@@ -43,7 +41,6 @@ void main()
     vec4 world_position = vec4(in_position + offset, 1.0);
     vs_pass.position = world_position.xyz;
     vs_pass.normal = in_normal;
-    vs_pass.uv = in_uv;
 
     gl_Position = u_per_frame.projection * u_per_frame.view * world_position;
 }

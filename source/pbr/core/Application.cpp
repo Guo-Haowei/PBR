@@ -6,6 +6,7 @@
 #if TARGET_PLATFORM == PLATFORM_EMSCRIPTEN
 #   include <emscripten.h>
 #endif
+
 namespace pbr {
 
 static void mainloop()
