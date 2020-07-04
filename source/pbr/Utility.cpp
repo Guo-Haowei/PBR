@@ -12,9 +12,6 @@ namespace pbr { namespace utility {
 
 TexturedMesh LoadModel(const char* path)
 {
-    std::cout << "--------------------------------------------\n";
-    std::cout << "[Log] start loading model \"" << path << "\"\n";
-
     string txtpath(path); txtpath.append(".txt");
     string binpath(path); binpath.append(".bin");
     ifstream txt(txtpath);
@@ -47,9 +44,6 @@ TexturedMesh LoadModel(const char* path)
             ++counter;
         }
     }
-
-    std::cout << "[Log] finished loading model\n";
-    std::cout << "--------------------------------------------\n" << std::flush;
 
     txt.close();
     bin.close();

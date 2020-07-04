@@ -30,10 +30,8 @@ cbuffer PerFrameBuffer : register(b1)
 Texture2D brdfLut : register(t1);
 TextureCube specularMap : register(t2);
 TextureCube irradianceMap : register(t3);
-Texture2D albedoMap : register(t4);
-Texture2D metallicMap : register(t5);
-Texture2D roughnessMap : register(t6);
-Texture2D normalMap : register(t7);
+Texture2D albedoMetallicMap : register(t4);
+Texture2D normalRoughnessMap : register(t5);
 
 SamplerState g_sampler : register(s0);
 SamplerState g_samplerLod : register(s1);
@@ -97,11 +95,14 @@ static const float ao = 1.0;
 float4 ps_main(out_vs input) : SV_TARGET
 {
     float3 position = input.position.xyz;
-    float metallic = metallicMap.Sample(g_sampler, input.uv).r;
-    float roughness = roughnessMap.Sample(g_sampler, input.uv).r;
-    float3 albedo = albedoMap.Sample(g_sampler, input.uv).rgb;
 
-    float3 N = normalMap.Sample(g_sampler, input.uv).rgb;
+    float4 albedoMetallic = albedoMetallicMap.Sample(g_sampler, input.uv);
+    float4 normalRoughness = normalRoughnessMap.Sample(g_sampler, input.uv);
+    float metallic = albedoMetallic.a;
+    float roughness = normalRoughness.a;
+    float3 albedo = albedoMetallic.rgb;
+
+    float3 N = normalRoughness.rgb;
     N = 2.0 * N - 1.0;
     // N = normalize(mul(N, input.TBN));
     N = normalize(mul(input.TBN, N));

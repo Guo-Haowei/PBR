@@ -76,6 +76,6 @@ ENDIF ()
 
 ADD_SUBDIRECTORY(source)
 
-# IF (WIN32)
-#     ADD_SUBDIRECTORY(tool)
-# ENDIF ()
+IF (WIN32)
+    ADD_SUBDIRECTORY(tool)
+ENDIF ()

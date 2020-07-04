@@ -133,25 +133,15 @@ void GLRendererImpl::PrepareGpuResources()
     // buffer
     createGeometries();
 
-    // albedo
-    auto albedoImage = utility::ReadPng(CERBERUS_DIR "Cerberus_A.png");
-    m_albedoTexture = CreateTexture(albedoImage, GL_RGB);
-    free(albedoImage.buffer.pData);
+    // albedo metallic
+    auto amImage = utility::ReadPng(CERBERUS_DIR "AlbedoMetallic.png");
+    m_albedoMetallicTexture = CreateTexture(amImage, GL_RGBA);
+    free(amImage.buffer.pData);
 
-    // metallic
-    auto metallicImage = utility::ReadPng(CERBERUS_DIR "Cerberus_M.png");
-    m_metallicTexture = CreateTexture(metallicImage, GL_R8);
-    free(metallicImage.buffer.pData);
-
-    // roughness
-    auto roughnessImage = utility::ReadPng(CERBERUS_DIR "Cerberus_R.png");
-    m_roughnessTexture = CreateTexture(roughnessImage, GL_R8);
-    free(roughnessImage.buffer.pData);
-
-    // normal
-    auto normalImage = utility::ReadPng(CERBERUS_DIR "Cerberus_N.png");
-    m_normalTexture = CreateTexture(normalImage, GL_RGB);
-    free(normalImage.buffer.pData);
+    // normal roughness
+    auto normalRoughnessImage = utility::ReadPng(CERBERUS_DIR "NormalRoughness.png");
+    m_normalRoughnessTexture = CreateTexture(normalRoughnessImage, GL_RGBA);
+    free(normalRoughnessImage.buffer.pData);
 
     // load hdr texture
     auto envImage = utility::ReadHDRImage(DEFAULT_HDR_ENV_MAP);
@@ -469,10 +459,8 @@ void GLRendererImpl::uploadConstantUniforms()
     m_pbrModelProgram.setUniform("u_irradiance_map", 1);
     m_pbrModelProgram.setUniform("u_specular_map", 2);
     m_pbrModelProgram.setUniform("u_brdf_lut", 3);
-    m_pbrModelProgram.setUniform("u_albedo", 4);
-    m_pbrModelProgram.setUniform("u_metallic", 5);
-    m_pbrModelProgram.setUniform("u_roughness", 6);
-    m_pbrModelProgram.setUniform("u_normal", 7);
+    m_pbrModelProgram.setUniform("u_albedoMetallic", 4);
+    m_pbrModelProgram.setUniform("u_normalRoughness", 5);
 
     m_backgroundProgram.use();
     m_backgroundProgram.setUniform("u_env_map", 0);
@@ -490,16 +478,10 @@ void GLRendererImpl::uploadConstantUniforms()
     glBindTexture(GL_TEXTURE_2D, m_brdfLUTTexture.handle);
 
     glActiveTexture(GL_TEXTURE4); // albedo
-    glBindTexture(GL_TEXTURE_2D, m_albedoTexture.handle);
+    glBindTexture(GL_TEXTURE_2D, m_albedoMetallicTexture.handle);
 
-    glActiveTexture(GL_TEXTURE5); // metallic
-    glBindTexture(GL_TEXTURE_2D, m_metallicTexture.handle);
-
-    glActiveTexture(GL_TEXTURE6); // roughness
-    glBindTexture(GL_TEXTURE_2D, m_roughnessTexture.handle);
-
-    glActiveTexture(GL_TEXTURE7); // roughness
-    glBindTexture(GL_TEXTURE_2D, m_normalTexture.handle);
+    glActiveTexture(GL_TEXTURE5); // roughness
+    glBindTexture(GL_TEXTURE_2D, m_normalRoughnessTexture.handle);
 }
 
 } } // namespace pbr::gl

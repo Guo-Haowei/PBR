@@ -76,10 +76,8 @@ void D3d11RendererImpl::setSrvAndSamplers()
     m_deviceContext->PSSetShaderResources(1, 1, m_brdfLUTSrv.GetAddressOf());
     m_deviceContext->PSSetShaderResources(2, 1, m_specularMap.srv.GetAddressOf());
     m_deviceContext->PSSetShaderResources(3, 1, m_irradianceMap.srv.GetAddressOf());
-    m_deviceContext->PSSetShaderResources(4, 1, m_albedo.GetAddressOf());
-    m_deviceContext->PSSetShaderResources(5, 1, m_metallic.GetAddressOf());
-    m_deviceContext->PSSetShaderResources(6, 1, m_roughness.GetAddressOf());
-    m_deviceContext->PSSetShaderResources(7, 1, m_normal.GetAddressOf());
+    m_deviceContext->PSSetShaderResources(4, 1, m_albedoMetallic.GetAddressOf());
+    m_deviceContext->PSSetShaderResources(5, 1, m_normalRoughness.GetAddressOf());
     m_deviceContext->PSSetSamplers(0, 1, m_sampler.GetAddressOf());
     m_deviceContext->PSSetSamplers(1, 1, m_samplerLod.GetAddressOf());
 }
@@ -252,21 +250,13 @@ void D3d11RendererImpl::PrepareGpuResources()
     createTexture2D(m_brdfLUTSrv, brdfImage, DXGI_FORMAT_R32G32_FLOAT);
     free(brdfImage.buffer.pData);
     // load albedo
-    auto albedoImage = utility::ReadPng(CERBERUS_DIR "Cerberus_A.png", 4);
-    createTexture2D(m_albedo, albedoImage, DXGI_FORMAT_R8G8B8A8_UNORM);
-    free(albedoImage.buffer.pData);
-    // metallic
-    auto metallicImage = utility::ReadPng(CERBERUS_DIR "Cerberus_M.png");
-    createTexture2D(m_metallic, metallicImage, DXGI_FORMAT_R8_UNORM);
-    free(metallicImage.buffer.pData);
-    // roughness
-    auto roughnessImage = utility::ReadPng(CERBERUS_DIR "Cerberus_R.png");
-    createTexture2D(m_roughness, roughnessImage, DXGI_FORMAT_R8_UNORM);
-    free(roughnessImage.buffer.pData);
-    // normal
-    auto normalImage = utility::ReadPng(CERBERUS_DIR "Cerberus_N.png", 4);
-    createTexture2D(m_normal, normalImage, DXGI_FORMAT_R8G8B8A8_UNORM);
-    free(normalImage.buffer.pData);
+    auto albedoMetallicImage = utility::ReadPng(CERBERUS_DIR "AlbedoMetallic.png");
+    createTexture2D(m_albedoMetallic, albedoMetallicImage, DXGI_FORMAT_R8G8B8A8_UNORM);
+    free(albedoMetallicImage.buffer.pData);
+    // normal roughness
+    auto normalRoughnessImage = utility::ReadPng(CERBERUS_DIR "NormalRoughness.png");
+    createTexture2D(m_normalRoughness, normalRoughnessImage, DXGI_FORMAT_R8G8B8A8_UNORM);
+    free(normalRoughnessImage.buffer.pData);
 
     // constant buffer
     m_perFrameBuffer.Create(m_device);

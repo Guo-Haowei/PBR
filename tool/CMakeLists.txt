@@ -1,1 +1,2 @@
-ADD_SUBDIRECTORY(brdfLutGenerator)
+ADD_SUBDIRECTORY(mergeTextures)
+# ADD_SUBDIRECTORY(brdfLutGenerator)

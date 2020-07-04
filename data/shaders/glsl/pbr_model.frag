@@ -27,10 +27,8 @@ uniform vec4 u_view_pos;
 uniform samplerCube u_irradiance_map;
 uniform samplerCube u_specular_map;
 uniform sampler2D u_brdf_lut;
-uniform sampler2D u_albedo;
-uniform sampler2D u_roughness;
-uniform sampler2D u_metallic;
-uniform sampler2D u_normal;
+uniform sampler2D u_albedoMetallic;
+uniform sampler2D u_normalRoughness;
 uniform int u_debug;
 
 // NDF(n, h, alpha) = alpha^2 / (pi * ((n dot h)^2 * (alpha^2 - 1) + 1)^2)
@@ -87,11 +85,14 @@ void main()
     // variables
     vec3 position = vs_pass.position;
 
-    vec3 albedo = texture(u_albedo, vs_pass.uv).rgb;
-    float metallic = texture(u_metallic, vs_pass.uv).r;
-    float roughness = texture(u_roughness, vs_pass.uv).r;
+    vec4 albedoMetallic = texture(u_albedoMetallic, vs_pass.uv);
+    vec4 normalRoughness = texture(u_normalRoughness, vs_pass.uv);
 
-    vec3 N = texture(u_normal, vs_pass.uv).rgb;
+    vec3 albedo = albedoMetallic.rgb;
+    float metallic = albedoMetallic.a;
+    float roughness = normalRoughness.a;
+
+    vec3 N = normalRoughness.rgb;
     N = 2.0 * N - 1.0;
     N = normalize(vs_pass.TBN * N);
 

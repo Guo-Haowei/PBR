@@ -43,10 +43,8 @@ private:
     GLTexture       m_cubeMapTexture;
     GLTexture       m_irradianceTexture;
     GLTexture       m_specularTexture;
-    GLTexture       m_albedoTexture;
-    GLTexture       m_roughnessTexture;
-    GLTexture       m_metallicTexture;
-    GLTexture       m_normalTexture;
+    GLTexture       m_albedoMetallicTexture;
+    GLTexture       m_normalRoughnessTexture;
     GLFramebuffer   m_framebuffer;
 
     mat4            m_cubeMapPerspective;
