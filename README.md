@@ -4,6 +4,10 @@
 
 Physically Based Rendering with multiple Graphics APIs
 
+## TODO
+
+Configure model and environment map from command line
+
 ## Graphics APIs
 
 API           | Implementation
