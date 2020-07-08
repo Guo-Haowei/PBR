@@ -6,7 +6,7 @@ Physically Based Rendering with multiple Graphics APIs
 
 ## TODO
 
-Configure model and environment map from command line
+Emissive map and AO map
 
 ## Graphics APIs
 
@@ -33,3 +33,5 @@ Learn OpenGL [https://learnopengl.com/PBR/Theory](https://learnopengl.com/PBR/Th
 HDR image from [http://www.hdrlabs.com/sibl/archive.html](http://www.hdrlabs.com/sibl/archive.html)
 
 Cerberus model from [http://artisaverb.info/PBT.html](http://artisaverb.info/PBT.html)
+
+Other models from [https://github.com/KhronosGroup/glTF-Sample-Models](https://github.com/KhronosGroup/glTF-Sample-Models)

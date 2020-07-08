@@ -75,6 +75,7 @@ private:
     ComPtr<ID3D11ShaderResourceView>    m_brdfLUTSrv;
     ComPtr<ID3D11ShaderResourceView>    m_albedoMetallic;
     ComPtr<ID3D11ShaderResourceView>    m_normalRoughness;
+    ComPtr<ID3D11ShaderResourceView>    m_emissiveAO;
     CubemapTexture                      m_environmentMap;
     CubemapTexture                      m_irradianceMap;
     CubemapTexture                      m_specularMap;

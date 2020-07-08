@@ -2,6 +2,7 @@
 #include "core/Window.h"
 #include "core/Camera.h"
 #include "core/Renderer.h"
+#include "core/Globals.h"
 #include "Utility.h"
 #include "D3dDebug.h"
 #include <iostream>
@@ -78,25 +79,13 @@ void D3d11RendererImpl::setSrvAndSamplers()
     m_deviceContext->PSSetShaderResources(3, 1, m_irradianceMap.srv.GetAddressOf());
     m_deviceContext->PSSetShaderResources(4, 1, m_albedoMetallic.GetAddressOf());
     m_deviceContext->PSSetShaderResources(5, 1, m_normalRoughness.GetAddressOf());
+    m_deviceContext->PSSetShaderResources(6, 1, m_emissiveAO.GetAddressOf());
     m_deviceContext->PSSetSamplers(0, 1, m_sampler.GetAddressOf());
     m_deviceContext->PSSetSamplers(1, 1, m_samplerLod.GetAddressOf());
 }
 
 void D3d11RendererImpl::Render(const Camera& camera)
 {
-    // TODO: refactor
-    static int debug = 0;
-    if (m_pWindow->IsKeyDown(KEY_0)) // pbr
-        debug = 0;
-    else if (m_pWindow->IsKeyDown(KEY_1)) // albedo
-        debug = 1;
-    else if (m_pWindow->IsKeyDown(KEY_2)) // normal
-        debug = 2;
-    else if (m_pWindow->IsKeyDown(KEY_3)) // metallic
-        debug = 3;
-    else if (m_pWindow->IsKeyDown(KEY_4)) // roughness
-        debug = 4;
-
     // set render target
     m_deviceContext->OMSetRenderTargets(1, m_immediate.rtv.GetAddressOf(), m_immediate.dsv.Get());
     // set viewport
@@ -117,12 +106,12 @@ void D3d11RendererImpl::Render(const Camera& camera)
     }
 
     m_viewPositionBuffer.m_cache.view_position = vec3(camera.GetViewPos());
-    m_viewPositionBuffer.m_cache.padding = debug;
+    m_viewPositionBuffer.m_cache.padding = g_debug;
     m_viewPositionBuffer.Update(m_deviceContext);
     m_viewPositionBuffer.PSSet(m_deviceContext, 1);
 
     // render spheres
-    m_pbrProgram.set(m_deviceContext);
+    // m_pbrProgram.set(m_deviceContext);
 
     if (camera.IsDirty())
     {
@@ -130,8 +119,7 @@ void D3d11RendererImpl::Render(const Camera& camera)
         m_viewPositionBuffer.PSSet(m_deviceContext, 1);
     }
 
-    m_pbrProgram.set(m_deviceContext);
-    renderSpheres();
+    // renderSpheres();
 
     m_pbrModelProgram.set(m_deviceContext);
     renderModel();
@@ -242,7 +230,7 @@ void D3d11RendererImpl::PrepareGpuResources()
     createSampler();
 
     // load hdr texture
-    auto envImage = utility::ReadHDRImage(DEFAULT_HDR_ENV_MAP);
+    auto envImage = utility::ReadHDRImage(g_env_map_path);
     createTexture2D(m_hdrSrv, envImage, DXGI_FORMAT_R32G32B32_FLOAT);
     free(envImage.buffer.pData);
     // load brdf texture
@@ -250,13 +238,17 @@ void D3d11RendererImpl::PrepareGpuResources()
     createTexture2D(m_brdfLUTSrv, brdfImage, DXGI_FORMAT_R32G32_FLOAT);
     free(brdfImage.buffer.pData);
     // load albedo
-    auto albedoMetallicImage = utility::ReadPng(CERBERUS_DIR "AlbedoMetallic.png");
+    auto albedoMetallicImage = utility::ReadPng(g_model_dir + "AlbedoMetallic.png");
     createTexture2D(m_albedoMetallic, albedoMetallicImage, DXGI_FORMAT_R8G8B8A8_UNORM);
     free(albedoMetallicImage.buffer.pData);
     // normal roughness
-    auto normalRoughnessImage = utility::ReadPng(CERBERUS_DIR "NormalRoughness.png");
+    auto normalRoughnessImage = utility::ReadPng(g_model_dir + "NormalRoughness.png");
     createTexture2D(m_normalRoughness, normalRoughnessImage, DXGI_FORMAT_R8G8B8A8_UNORM);
     free(normalRoughnessImage.buffer.pData);
+    // emissive ao
+    auto emissiveAOImage = utility::ReadPng(g_model_dir + "EmissiveAO.png");
+    createTexture2D(m_emissiveAO, emissiveAOImage, DXGI_FORMAT_R8G8B8A8_UNORM);
+    free(emissiveAOImage.buffer.pData);
 
     // constant buffer
     m_perFrameBuffer.Create(m_device);
@@ -330,11 +322,7 @@ void D3d11RendererImpl::uploadConstantBuffer()
     m_lightBuffer.PSSet(m_deviceContext, 0);
     m_lightBuffer.Update(m_deviceContext);
 
-    const mat4 scaling = glm::scale(mat4(1.0f), vec3(0.05f));
-    const mat4 rotation = glm::rotate(mat4(1.0f), -glm::radians(90.0f), vec3(1, 0, 0));
-    const mat4 translation = glm::translate(mat4(1.0f), vec3(0.0f, 0.0f, 4.0f));
-    const mat4 transform = translation * rotation * scaling;
-    m_perDrawBuffer.m_cache.transform = transform;
+    m_perDrawBuffer.m_cache.transform = g_transform;
     m_perDrawBuffer.VSSet(m_deviceContext, 0);
     m_perDrawBuffer.Update(m_deviceContext);
 }
@@ -564,7 +552,7 @@ void D3d11RendererImpl::compileShaders()
 void D3d11RendererImpl::createGeometries()
 {
     // model
-    const auto model = utility::LoadModel(CERBERUS_DIR "Cerberus");
+    const auto model = utility::LoadModel(g_model_dir.c_str());
     {
         // vertex buffer
         D3D11_BUFFER_DESC bufferDesc {};

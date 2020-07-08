@@ -12,8 +12,8 @@ namespace pbr { namespace utility {
 
 TexturedMesh LoadModel(const char* path)
 {
-    string txtpath(path); txtpath.append(".txt");
-    string binpath(path); binpath.append(".bin");
+    string txtpath(path); txtpath.append("model.txt");
+    string binpath(path); binpath.append("model.bin");
     ifstream txt(txtpath);
     if (!txt.is_open())
         THROW_EXCEPTION("Failed to open file \"" + txtpath + "\"");

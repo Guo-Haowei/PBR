@@ -1,11 +1,11 @@
 #include "base/Error.h"
 #include "core/Renderer.h"
+#include "core/Globals.h"
 #include "GLRendererImpl.h"
 #include "GLPrerequisites.h"
 #include "Utility.h"
 #include "Mesh.h"
 #include "Scene.h"
-#include "Global.h"
 #include "Paths.h"
 #if TARGET_PLATFORM == PLATFORM_EMSCRIPTEN
 #   include "shaders.generated.h"
@@ -54,25 +54,13 @@ void GLRendererImpl::DumpGraphicsCardInfo()
 
 void GLRendererImpl::Render(const Camera& camera)
 {
-    // TODO: refactor
-    static int debug = 0;
-    if (m_pWindow->IsKeyDown(KEY_0)) // pbr
-        debug = 0;
-    else if (m_pWindow->IsKeyDown(KEY_1)) // albedo
-        debug = 1;
-    else if (m_pWindow->IsKeyDown(KEY_2)) // normal
-        debug = 2;
-    else if (m_pWindow->IsKeyDown(KEY_3)) // metallic
-        debug = 3;
-    else if (m_pWindow->IsKeyDown(KEY_4)) // roughness
-        debug = 4;
-
     // set viewport
     const Extent2i& extent = m_pWindow->GetFrameBufferExtent();
     glViewport(0, 0, extent.width, extent.height);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // draw spheres
+#if 0
     m_pbrProgram.use();
     m_pbrProgram.setUniform("u_debug", debug);
     if (camera.IsDirty())
@@ -85,10 +73,10 @@ void GLRendererImpl::Render(const Camera& camera)
     glBindVertexArray(m_sphere.vao);
     const int size = 5;
     glDrawElementsInstanced(GL_TRIANGLES, m_sphere.indexCount, GL_UNSIGNED_INT, 0, size * size);
-
+#endif
     // draw model
     m_pbrModelProgram.use();
-    m_pbrModelProgram.setUniform("u_debug", debug);
+    m_pbrModelProgram.setUniform("u_debug", g_debug);
     if (camera.IsDirty())
     {
         m_pbrModelProgram.setUniform("u_per_frame.view", camera.ViewMatrix());
@@ -134,17 +122,22 @@ void GLRendererImpl::PrepareGpuResources()
     createGeometries();
 
     // albedo metallic
-    auto amImage = utility::ReadPng(CERBERUS_DIR "AlbedoMetallic.png");
+    auto amImage = utility::ReadPng(g_model_dir + "AlbedoMetallic.png");
     m_albedoMetallicTexture = CreateTexture(amImage, GL_RGBA);
     free(amImage.buffer.pData);
 
     // normal roughness
-    auto normalRoughnessImage = utility::ReadPng(CERBERUS_DIR "NormalRoughness.png");
+    auto normalRoughnessImage = utility::ReadPng(g_model_dir + "NormalRoughness.png");
     m_normalRoughnessTexture = CreateTexture(normalRoughnessImage, GL_RGBA);
     free(normalRoughnessImage.buffer.pData);
 
+    // emissive ao
+    auto emissiveAO = utility::ReadPng(g_model_dir + "EmissiveAO.png");
+    m_emissiveAOTexture = CreateTexture(emissiveAO, GL_RGBA);
+    free(emissiveAO.buffer.pData);
+
     // load hdr texture
-    auto envImage = utility::ReadHDRImage(DEFAULT_HDR_ENV_MAP);
+    auto envImage = utility::ReadHDRImage(g_env_map_path);
     m_hdrTexture = CreateTexture(envImage, GL_RGB32F);
     free(envImage.buffer.pData);
     // load brdf texture
@@ -394,7 +387,7 @@ void GLRendererImpl::createGeometries()
     }
     {
         // load model
-        auto model = utility::LoadModel(CERBERUS_DIR "Cerberus");
+        auto model = utility::LoadModel(g_model_dir.c_str());
 
         m_model.indexCount = static_cast<uint32_t>(3 * model.indices.size());
         glGenVertexArrays(1, &m_model.vao);
@@ -449,11 +442,7 @@ void GLRendererImpl::uploadConstantUniforms()
         m_pbrModelProgram.setUniform(light + "color", g_lights[i].color);
     }
 
-    const mat4 scaling = glm::scale(mat4(1.0f), vec3(0.05f));
-    const mat4 rotation = glm::rotate(mat4(1.0f), -glm::radians(90.0f), vec3(1, 0, 0));
-    const mat4 translation = glm::translate(mat4(1.0f), vec3(0.0f, 0.0f, 4.0f));
-    const mat4 transform = translation * rotation * scaling;
-    m_pbrModelProgram.setUniform("u_per_draw.transform", transform);
+    m_pbrModelProgram.setUniform("u_per_draw.transform", g_transform);
 
     // textures
     m_pbrModelProgram.setUniform("u_irradiance_map", 1);
@@ -461,6 +450,7 @@ void GLRendererImpl::uploadConstantUniforms()
     m_pbrModelProgram.setUniform("u_brdf_lut", 3);
     m_pbrModelProgram.setUniform("u_albedoMetallic", 4);
     m_pbrModelProgram.setUniform("u_normalRoughness", 5);
+    m_pbrModelProgram.setUniform("u_emissiveAO", 6);
 
     m_backgroundProgram.use();
     m_backgroundProgram.setUniform("u_env_map", 0);
@@ -477,11 +467,14 @@ void GLRendererImpl::uploadConstantUniforms()
     glActiveTexture(GL_TEXTURE3); // brdf
     glBindTexture(GL_TEXTURE_2D, m_brdfLUTTexture.handle);
 
-    glActiveTexture(GL_TEXTURE4); // albedo
+    glActiveTexture(GL_TEXTURE4); // albedo + metallic
     glBindTexture(GL_TEXTURE_2D, m_albedoMetallicTexture.handle);
 
-    glActiveTexture(GL_TEXTURE5); // roughness
+    glActiveTexture(GL_TEXTURE5); // normal + roughness
     glBindTexture(GL_TEXTURE_2D, m_normalRoughnessTexture.handle);
+
+    glActiveTexture(GL_TEXTURE6); // emissive + ao
+    glBindTexture(GL_TEXTURE_2D, m_emissiveAOTexture.handle);
 }
 
 } } // namespace pbr::gl

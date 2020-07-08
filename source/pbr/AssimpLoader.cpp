@@ -19,7 +19,7 @@ TexturedMesh AssimpLoader::load(const char* path)
     cout << "[Log] Loading scene [" << fullpath << "]" << endl;
     const aiScene* aiscene = importer.ReadFile(fullpath,
         aiProcess_Triangulate |
-        // aiProcess_FlipUVs |
+        aiProcess_FlipUVs |
         aiProcess_CalcTangentSpace |
         // aiProcess_GenSmoothNormals |
         aiProcess_JoinIdenticalVertices
@@ -75,3 +75,16 @@ TexturedMesh AssimpLoader::load(const char* path)
 }
 
 } // namespace pbr
+
+int main()
+{
+    pbr::AssimpLoader loader;
+    try
+    {
+        loader.load("gltf/DamagedHelmet.gltf");
+    }
+    catch(const std::runtime_error& e)
+    {
+        std::cerr << e.what() << '\n';
+    }
+}

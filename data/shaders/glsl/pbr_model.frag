@@ -29,6 +29,7 @@ uniform samplerCube u_specular_map;
 uniform sampler2D u_brdf_lut;
 uniform sampler2D u_albedoMetallic;
 uniform sampler2D u_normalRoughness;
+uniform sampler2D u_emissiveAO;
 uniform int u_debug;
 
 // NDF(n, h, alpha) = alpha^2 / (pi * ((n dot h)^2 * (alpha^2 - 1) + 1)^2)
@@ -78,8 +79,6 @@ vec3 FresnelSchlickRoughness(float cosTheta, in vec3 F0, float roughness)
     return F0 + (max(vec3(1.0 - roughness) - F0, vec3(0.0))) * pow(1.0 - cosTheta, 5.0);
 }
 
-const float ao = 1.0;
-
 void main()
 {
     // variables
@@ -87,10 +86,12 @@ void main()
 
     vec4 albedoMetallic = texture(u_albedoMetallic, vs_pass.uv);
     vec4 normalRoughness = texture(u_normalRoughness, vs_pass.uv);
+    vec4 emissiveAO = texture(u_emissiveAO, vs_pass.uv);
 
     vec3 albedo = albedoMetallic.rgb;
     float metallic = albedoMetallic.a;
     float roughness = normalRoughness.a;
+    float ao = emissiveAO.a;
 
     vec3 N = normalRoughness.rgb;
     N = 2.0 * N - 1.0;
@@ -117,6 +118,16 @@ void main()
     else if (u_debug == 4)
     {
         out_color = vec4(vec3(roughness), 1.0);
+        return;
+    }
+    else if (u_debug == 5)
+    {
+        out_color = vec4(vec3(ao), 1.0);
+        return;
+    }
+    else if (u_debug == 6)
+    {
+        out_color = vec4(emissiveAO.rgb, 1.0);
         return;
     }
 
@@ -181,7 +192,7 @@ void main()
 
     vec3 ambient = (kD * diffuse + specular) * ao;
 
-    vec3 color = ambient + Lo;
+    vec3 color = ambient + Lo + pow(emissiveAO.rgb, vec3(2.2));
     // HDR tonemapping
     color = color / (color + vec3(1.0));
     // gamma correction

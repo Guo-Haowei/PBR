@@ -32,6 +32,7 @@ TextureCube specularMap : register(t2);
 TextureCube irradianceMap : register(t3);
 Texture2D albedoMetallicMap : register(t4);
 Texture2D normalRoughnessMap : register(t5);
+Texture2D emissiveAOMap : register(t6);
 
 SamplerState g_sampler : register(s0);
 SamplerState g_samplerLod : register(s1);
@@ -90,17 +91,17 @@ float3 mix(float3 x, float3 y, float a)
     return (1.0 - a) * x + a * y;
 }
 
-static const float ao = 1.0;
-
 float4 ps_main(out_vs input) : SV_TARGET
 {
     float3 position = input.position.xyz;
 
     float4 albedoMetallic = albedoMetallicMap.Sample(g_sampler, input.uv);
     float4 normalRoughness = normalRoughnessMap.Sample(g_sampler, input.uv);
+    float4 emissiveAO = emissiveAOMap.Sample(g_sampler, input.uv);
     float metallic = albedoMetallic.a;
     float roughness = normalRoughness.a;
     float3 albedo = albedoMetallic.rgb;
+    float ao = emissiveAO.a;
 
     float3 N = normalRoughness.rgb;
     N = 2.0 * N - 1.0;
@@ -118,6 +119,10 @@ float4 ps_main(out_vs input) : SV_TARGET
         return float4(metallic, metallic, metallic, 1.0);
     else if (debug == 4)
         return float4(roughness, roughness, roughness, 1.0);
+    else if (debug == 5)
+        return float4(ao, ao, ao, 1.0);
+    else if (debug == 6)
+        return float4(emissiveAO.rgb, 1.0);
 
     // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0
     // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)
@@ -181,7 +186,7 @@ float4 ps_main(out_vs input) : SV_TARGET
 
     float3 ambient = (kD * diffuse + specular) * ao;
 
-    float3 color = ambient + Lo;
+    float3 color = ambient + Lo + pow(emissiveAO.rgb, 2.2);
 
     // HDR tonemapping
     color = color / (color + 1.0);

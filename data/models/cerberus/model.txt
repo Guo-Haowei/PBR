@@ -1,0 +1,7 @@
+index {
+    size 402516
+}
+
+vertex {
+    size 1682856
+}

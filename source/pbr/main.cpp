@@ -11,11 +11,11 @@ extern "C" {
 }
 #endif
 
-int main()
+int main(int argc, const char** argv)
 {
     try
     {
-        pbr::Application::GetSingleton().Run();
+        pbr::Application::GetSingleton().Run(argc, argv);
     }
     catch(const pbr::Exception& e)
     {

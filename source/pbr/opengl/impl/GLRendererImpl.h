@@ -45,6 +45,7 @@ private:
     GLTexture       m_specularTexture;
     GLTexture       m_albedoMetallicTexture;
     GLTexture       m_normalRoughnessTexture;
+    GLTexture       m_emissiveAOTexture;
     GLFramebuffer   m_framebuffer;
 
     mat4            m_cubeMapPerspective;
