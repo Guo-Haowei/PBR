@@ -1,6 +1,7 @@
 #include "Camera.h"
 #include "Window.h"
 #include "Utility.h"
+#include "base/Platform.h"
 #include <glm/gtx/vector_angle.hpp>
 
 namespace pbr {
@@ -95,7 +96,10 @@ void CameraController::Update(const Window* pWindow)
 
     // zoom
     mat4& M = m_pCamera->m_transform;
-    const double scroll = pWindow->GetScroll();
+    double scroll = pWindow->GetScroll();
+#if TARGET_PLATFORM == PLATFORM_EMSCRIPTEN
+    scroll *= 0.1;
+#endif
     if (scroll != 0)
     {
         float deltaZ = static_cast<float>(scroll) * 0.6f;

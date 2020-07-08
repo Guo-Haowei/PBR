@@ -81,7 +81,7 @@ int main()
     pbr::AssimpLoader loader;
     try
     {
-        loader.load("gltf/DamagedHelmet.gltf");
+        loader.load("gltf/WaterBottle.gltf");
     }
     catch(const std::runtime_error& e)
     {

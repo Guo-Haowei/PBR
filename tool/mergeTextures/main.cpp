@@ -15,8 +15,10 @@ void merge(const char* image1, const char* image2)
 
     assert(width1 == width2);
     assert(height1 == height2);
-    assert(channel1 == 3);
-    std::cout << channel2 << std::endl;
+    std::cout << "channel1: " << channel1 << std::endl;
+    std::cout << "channel2: " << channel2 << std::endl;
+    // assert(channel1 == 3);
+    // assert(channel2 == 3);
 
     int size = width1 * height1;
     unsigned char* buffer = new unsigned char[4 * size];
@@ -26,7 +28,7 @@ void merge(const char* image1, const char* image2)
         buffer[4 * i + 0] = buffer1[channel1 * i];
         buffer[4 * i + 1] = buffer1[channel1 * i + 1];
         buffer[4 * i + 2] = buffer1[channel1 * i + 2];
-        buffer[4 * i + 3] = buffer2[channel2 * i];
+        buffer[4 * i + 3] = buffer2[channel2 * i + 0];
     }
 
     stbi_write_png("test.png", width1, height1, 4, buffer, 4 * width1);
@@ -36,27 +38,27 @@ void merge(const char* image1, const char* image2)
 
 int main()
 {
-    // merge("E.jpg", "AO.jpg");
+    merge("e.png", "ao_r_m.png");
     // int width, height, channel;
     // unsigned char* buffer1 = stbi_load("Emissive.jpg", &width, &height, &channel, 0);
 
-    int width = 1024;
-    int height = 1024;
+    // int width = 1024;
+    // int height = 1024;
 
-    int size = width * height;
-    unsigned char* buffer = new unsigned char[4 * size];
+    // int size = width * height;
+    // unsigned char* buffer = new unsigned char[4 * size];
 
-    int color = 2; // green
+    // int color = 2; // green
 
-    for (int i = 0; i < size; ++i)
-    {
-        buffer[4 * i + 0] = 0;
-        buffer[4 * i + 1] = 0;
-        buffer[4 * i + 2] = 0;
-        buffer[4 * i + 3] = 255; // one
-    }
+    // for (int i = 0; i < size; ++i)
+    // {
+    //     buffer[4 * i + 0] = 0;
+    //     buffer[4 * i + 1] = 0;
+    //     buffer[4 * i + 2] = 0;
+    //     buffer[4 * i + 3] = 255; // one
+    // }
 
-    stbi_write_png("test2.png", width, height, 4, buffer, 4 * width);
+    // stbi_write_png("test2.png", width, height, 4, buffer, 4 * width);
 
-    delete [] buffer;
+    // delete [] buffer;
 }

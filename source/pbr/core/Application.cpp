@@ -99,11 +99,11 @@ void Application::handleKeyInput()
 
 void Application::configureScene(int argc, const char** argv)
 {
-    string model = "cerberus";
+    string model = "bottle";
 #if TARGET_PLATFORM == PLATFORM_EMSCRIPTEN
     string env = "background";
 #else
-    string env = "stairs";
+    string env = "circus";
 #endif
 
     if (argc > 1)
@@ -123,6 +123,12 @@ void Application::configureScene(int argc, const char** argv)
     {
         const mat4 scaling = glm::scale(mat4(1.0f), vec3(3.0f));
         const mat4 rotation = glm::rotate(mat4(1.0f), glm::radians(90.0f), vec3(1, 0, 0));
+        g_transform = rotation * scaling;
+    }
+    else if (model == "bottle")
+    {
+        const mat4 scaling = glm::scale(mat4(1.0f), vec3(15.0f));
+        const mat4 rotation = glm::rotate(mat4(1.0f), -glm::radians(90.0f), vec3(0, 1, 0));
         g_transform = rotation * scaling;
     }
     else
