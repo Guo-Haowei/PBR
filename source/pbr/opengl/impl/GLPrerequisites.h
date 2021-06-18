@@ -1,12 +1,13 @@
 #pragma once
-#include "base/Platform.h"
 #include "base/Definitions.h"
+#include "base/Platform.h"
 
 #if TARGET_PLATFORM == PLATFORM_EMSCRIPTEN
-#   include <GLES3/gl32.h>
-#   include <GLES2/gl2ext.h>
+#include <GLES3/gl32.h>
+// include gl2ext.h after gl32.h
+#include <GLES2/gl2ext.h>
 #else
-#   include <glad/glad.h>
+#include <glad/glad.h>
 #endif
 
 #include <GLFW/glfw3.h>

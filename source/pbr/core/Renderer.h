@@ -1,20 +1,19 @@
 #pragma once
-#include "base/Definitions.h"
 #include "Mesh.h"
+#include "base/Definitions.h"
 
 namespace pbr {
 
 class Window;
 class Camera;
 
-class Renderer
-{
-public:
-    static constexpr int cubeMapRes             { 512 };
-    static constexpr int irradianceMapRes       { 32 };
-    static constexpr int specularMapMipLevels   { 7 };
-    static constexpr int specularMapRes         { 512 };
-    static constexpr int brdfLUTImageRes        { 512 };
+class Renderer {
+   public:
+    static constexpr int cubeMapRes { 512 };
+    static constexpr int irradianceMapRes { 32 };
+    static constexpr int specularMapMipLevels { 7 };
+    static constexpr int specularMapRes { 512 };
+    static constexpr int brdfLUTImageRes { 512 };
 
     static Renderer* CreateRenderer(const Window* pWindow);
     virtual void Initialize() = 0;
@@ -24,8 +23,9 @@ public:
     virtual void Resize(const Extent2i& extent) = 0;
     virtual void Finalize() = 0;
     virtual ~Renderer() = default;
-protected:
+
+   protected:
     Renderer(const Window* pWindow);
 };
 
-} // namespace pbr
+}  // namespace pbr

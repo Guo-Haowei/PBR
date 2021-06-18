@@ -1,41 +1,39 @@
 #include "D3d11RendererImpl.h"
-#include "core/Window.h"
-#include "core/Camera.h"
-#include "core/Renderer.h"
-#include "core/Globals.h"
-#include "Utility.h"
-#include "D3dDebug.h"
+#include <cstddef>  // offsetof
 #include <iostream>
-#include <cstddef> // offsetof
+#include "D3dDebug.h"
+#include "Utility.h"
+#include "core/Camera.h"
+#include "core/Globals.h"
+#include "core/Renderer.h"
+#include "core/Window.h"
+
 #define GLFW_EXPOSE_NATIVE_WIN32
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 #include "Paths.h"
 
-namespace pbr { namespace d3d11 {
+namespace pbr {
+namespace d3d11 {
 
 static const float clearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
-D3d11RendererImpl::D3d11RendererImpl(const Window* pWindow) : m_pWindow(pWindow)
-{
+D3d11RendererImpl::D3d11RendererImpl(const Window* pWindow)
+    : m_pWindow(pWindow) {
 }
 
-void D3d11RendererImpl::Initialize()
-{
+void D3d11RendererImpl::Initialize() {
     m_hwnd = glfwGetWin32Window(m_pWindow->GetInternalWindow());
     createDevice();
     createSwapchain();
     createImmediateRenderTarget(m_pWindow->GetFrameBufferExtent());
 }
 
-void D3d11RendererImpl::Finalize()
-{
-
+void D3d11RendererImpl::Finalize() {
 }
 
-void D3d11RendererImpl::renderSpheres()
-{
+void D3d11RendererImpl::renderSpheres() {
     // set input layout
     m_deviceContext->IASetInputLayout(m_meshLayout.Get());
     // set vertex/index buffer
@@ -47,8 +45,7 @@ void D3d11RendererImpl::renderSpheres()
     m_deviceContext->DrawIndexedInstanced(m_sphere.indexCount, size * size, 0, 0, 0);
 }
 
-void D3d11RendererImpl::renderModel()
-{
+void D3d11RendererImpl::renderModel() {
     // set input layout
     m_deviceContext->IASetInputLayout(m_texturedMeshLayout.Get());
     // set vertex/index buffer
@@ -59,8 +56,7 @@ void D3d11RendererImpl::renderModel()
     m_deviceContext->DrawIndexed(m_model.indexCount, 0, 0);
 }
 
-void D3d11RendererImpl::renderCube()
-{
+void D3d11RendererImpl::renderCube() {
     // set input layout
     m_deviceContext->IASetInputLayout(m_cubeLayout.Get());
     // set buffers
@@ -71,8 +67,7 @@ void D3d11RendererImpl::renderCube()
     m_deviceContext->DrawIndexed(m_cube.indexCount, 0, 0);
 }
 
-void D3d11RendererImpl::setSrvAndSamplers()
-{
+void D3d11RendererImpl::setSrvAndSamplers() {
     m_deviceContext->PSSetShaderResources(0, 1, m_environmentMap.srv.GetAddressOf());
     m_deviceContext->PSSetShaderResources(1, 1, m_brdfLUTSrv.GetAddressOf());
     m_deviceContext->PSSetShaderResources(2, 1, m_specularMap.srv.GetAddressOf());
@@ -84,8 +79,7 @@ void D3d11RendererImpl::setSrvAndSamplers()
     m_deviceContext->PSSetSamplers(1, 1, m_samplerLod.GetAddressOf());
 }
 
-void D3d11RendererImpl::Render(const Camera& camera)
-{
+void D3d11RendererImpl::Render(const Camera& camera) {
     // set render target
     m_deviceContext->OMSetRenderTargets(1, m_immediate.rtv.GetAddressOf(), m_immediate.dsv.Get());
     // set viewport
@@ -97,8 +91,7 @@ void D3d11RendererImpl::Render(const Camera& camera)
     // set primitive topology
 
     // update shared constant buffer
-    if (camera.IsDirty())
-    {
+    if (camera.IsDirty()) {
         m_perFrameBuffer.m_cache.view = camera.ViewMatrix();
         m_perFrameBuffer.m_cache.projection = camera.ProjectionMatrixD3d();
         m_perFrameBuffer.Update(m_deviceContext);
@@ -113,8 +106,7 @@ void D3d11RendererImpl::Render(const Camera& camera)
     // render spheres
     // m_pbrProgram.set(m_deviceContext);
 
-    if (camera.IsDirty())
-    {
+    if (camera.IsDirty()) {
         m_perFrameBuffer.VSSet(m_deviceContext, 1);
         m_viewPositionBuffer.PSSet(m_deviceContext, 1);
     }
@@ -126,8 +118,7 @@ void D3d11RendererImpl::Render(const Camera& camera)
 
     // render background
     m_backgroundProgram.set(m_deviceContext);
-    if (camera.IsDirty())
-    {
+    if (camera.IsDirty()) {
         m_perFrameBuffer.VSSet(m_deviceContext, 1);
         m_viewPositionBuffer.PSSet(m_deviceContext, 1);
     }
@@ -135,12 +126,11 @@ void D3d11RendererImpl::Render(const Camera& camera)
     renderCube();
 
     // present
-    m_swapChain->Present(1, 0); // vsync
+    m_swapChain->Present(1, 0);  // vsync
     // m_swapChain->Present(0, 0);
 }
 
-void D3d11RendererImpl::setViewport(int width, int height)
-{
+void D3d11RendererImpl::setViewport(int width, int height) {
     D3D11_VIEWPORT viewport;
     ZeroMemory(&viewport, sizeof(D3D11_VIEWPORT));
     viewport.Width = static_cast<float>(width);
@@ -150,30 +140,29 @@ void D3d11RendererImpl::setViewport(int width, int height)
     m_deviceContext->RSSetViewports(1, &viewport);
 }
 
-void D3d11RendererImpl::createDevice()
-{
+void D3d11RendererImpl::createDevice() {
     D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
     UINT createDeviceFlags = 0;
 #ifdef PBR_DEBUG
     createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
-#endif // DEBUG
+#endif  // DEBUG
 
     HRESULT hr = D3D11CreateDevice(
-        nullptr,                    // pAdapter
+        nullptr,  // pAdapter
         D3D_DRIVER_TYPE_HARDWARE,
-        0,                          // HMODULE Software
+        0,  // HMODULE Software
         createDeviceFlags,
-        &featureLevel,              // in feature levels
-        1,                          // number of feature levels
+        &featureLevel,  // in feature levels
+        1,              // number of feature levels
         D3D11_SDK_VERSION,
         m_device.GetAddressOf(),
-        nullptr,                    // out feature levels
+        nullptr,  // out feature levels
         m_deviceContext.GetAddressOf());
 
     D3D_THROW_IF_FAILED(hr, "Failed to create d3d11 device");
 
     D3D_THROW_IF_FAILED(
-        m_device->QueryInterface(__uuidof(IDXGIDevice),(void**)m_dxgiDevice.GetAddressOf()),
+        m_device->QueryInterface(__uuidof(IDXGIDevice), (void**)m_dxgiDevice.GetAddressOf()),
         "Failed to query IDXGIDevice");
 
     D3D_THROW_IF_FAILED(
@@ -185,8 +174,7 @@ void D3d11RendererImpl::createDevice()
         "Failed to query IDXGIFactory");
 }
 
-void D3d11RendererImpl::createSwapchain()
-{
+void D3d11RendererImpl::createSwapchain() {
     // TODO: msaa
     DXGI_MODE_DESC bufferDesc;
     ZeroMemory(&bufferDesc, sizeof(DXGI_MODE_DESC));
@@ -208,19 +196,17 @@ void D3d11RendererImpl::createSwapchain()
     desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 
     D3D_THROW_IF_FAILED(m_dxgiFactory->CreateSwapChain(m_device.Get(), &desc, m_swapChain.GetAddressOf()),
-        "Failed to create swap chain");
+                        "Failed to create swap chain");
 }
 
-void D3d11RendererImpl::DumpGraphicsCardInfo()
-{
+void D3d11RendererImpl::DumpGraphicsCardInfo() {
     DXGI_ADAPTER_DESC desc {};
     D3D_THROW_IF_FAILED(m_dxgiAdapter->GetDesc(&desc), "Failed to get adapter description");
 
     std::wcout << "Graphics Card:     " << desc.Description << std::endl;
 }
 
-void D3d11RendererImpl::PrepareGpuResources()
-{
+void D3d11RendererImpl::PrepareGpuResources() {
     // shaders
     compileShaders();
     // geometries
@@ -275,7 +261,7 @@ void D3d11RendererImpl::PrepareGpuResources()
         dsDesc.StencilEnable = false;
 
         D3D_THROW_IF_FAILED(m_device->CreateDepthStencilState(&dsDesc, m_depthStencilState.GetAddressOf()),
-            "Failed to create depth stencil state");
+                            "Failed to create depth stencil state");
 
         m_deviceContext->OMSetDepthStencilState(m_depthStencilState.Get(), 1);
     }
@@ -294,8 +280,7 @@ void D3d11RendererImpl::PrepareGpuResources()
     setSrvAndSamplers();
 }
 
-void D3d11RendererImpl::createSampler()
-{
+void D3d11RendererImpl::createSampler() {
     D3D11_SAMPLER_DESC samplerDesc {};
     samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
     samplerDesc.AddressU = samplerDesc.AddressV = samplerDesc.AddressW =
@@ -306,17 +291,16 @@ void D3d11RendererImpl::createSampler()
     samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
     D3D_THROW_IF_FAILED(m_device->CreateSamplerState(&samplerDesc, m_sampler.GetAddressOf()),
-        "Failed to create sampler satete");
+                        "Failed to create sampler satete");
 
     // samplerDesc.Filter = D3D11_FILTER_ANISOTROPIC;
     samplerDesc.MaxLOD = float(Renderer::specularMapMipLevels) - 1.0f;
 
     D3D_THROW_IF_FAILED(m_device->CreateSamplerState(&samplerDesc, m_samplerLod.GetAddressOf()),
-        "Failed to create sampler satete");
+                        "Failed to create sampler satete");
 }
 
-void D3d11RendererImpl::uploadConstantBuffer()
-{
+void D3d11RendererImpl::uploadConstantBuffer() {
     memcpy(&m_lightBuffer.m_cache, &g_lights, m_lightBuffer.BufferSize());
     // m_deviceContext->PSSetShader(m_pbrProgram.pixelShader.Get(), 0, 0);
     m_lightBuffer.PSSet(m_deviceContext, 0);
@@ -327,15 +311,13 @@ void D3d11RendererImpl::uploadConstantBuffer()
     m_perDrawBuffer.Update(m_deviceContext);
 }
 
-void D3d11RendererImpl::Resize(const Extent2i& extent)
-{
+void D3d11RendererImpl::Resize(const Extent2i& extent) {
     cleanupImmediateRenderTarget();
     m_swapChain->ResizeBuffers(0, extent.width, extent.height, DXGI_FORMAT_UNKNOWN, 0);
     createImmediateRenderTarget(extent);
 }
 
-void D3d11RendererImpl::createImmediateRenderTarget(const Extent2i& extent)
-{
+void D3d11RendererImpl::createImmediateRenderTarget(const Extent2i& extent) {
     ComPtr<ID3D11Texture2D> backbuffer;
     m_swapChain->GetBuffer(0, IID_PPV_ARGS(backbuffer.GetAddressOf()));
     HRESULT hr = m_device->CreateRenderTargetView(backbuffer.Get(), NULL, m_immediate.rtv.GetAddressOf());
@@ -353,14 +335,13 @@ void D3d11RendererImpl::createImmediateRenderTarget(const Extent2i& extent)
     ComPtr<ID3D11Texture2D> depthBuffer;
 
     D3D_THROW_IF_FAILED(m_device->CreateTexture2D(&desc, 0, depthBuffer.GetAddressOf()),
-        "Failed to create depth buffer");
+                        "Failed to create depth buffer");
 
     D3D_THROW_IF_FAILED(m_device->CreateDepthStencilView(depthBuffer.Get(), nullptr, m_immediate.dsv.GetAddressOf()),
-        "Failed to create depth stencil view");
+                        "Failed to create depth stencil view");
 }
 
-void D3d11RendererImpl::createCubemap(CubemapTexture& target, int res, int mipLevels, bool genMips)
-{
+void D3d11RendererImpl::createCubemap(CubemapTexture& target, int res, int mipLevels, bool genMips) {
     D3D11_TEXTURE2D_DESC textureDesc {};
     textureDesc.Width = textureDesc.Height = res;
     textureDesc.MipLevels = mipLevels;
@@ -375,18 +356,17 @@ void D3d11RendererImpl::createCubemap(CubemapTexture& target, int res, int mipLe
         textureDesc.MiscFlags |= D3D11_RESOURCE_MISC_GENERATE_MIPS;
 
     D3D_THROW_IF_FAILED(m_device->CreateTexture2D(&textureDesc, NULL, target.cubeBuffer.GetAddressOf()),
-        "Failed to create cube buffer");
+                        "Failed to create cube buffer");
 
     D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc {};
     srvDesc.Format = textureDesc.Format;
     srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
     srvDesc.TextureCube.MipLevels = mipLevels;
     D3D_THROW_IF_FAILED(m_device->CreateShaderResourceView(target.cubeBuffer.Get(), &srvDesc, target.srv.GetAddressOf()),
-        "Failed to create shader resource view");
+                        "Failed to create shader resource view");
 }
 
-void D3d11RendererImpl::renderToEnvironmentMap()
-{
+void D3d11RendererImpl::renderToEnvironmentMap() {
     // set viewport
     setViewport(Renderer::cubeMapRes);
 
@@ -397,8 +377,7 @@ void D3d11RendererImpl::renderToEnvironmentMap()
 
     m_perFrameBuffer.m_cache.projection = m_cubeMapPerspective;
 
-    for (int face = 0; face < 6; ++face)
-    {
+    for (int face = 0; face < 6; ++face) {
         // temporary render target view
         ComPtr<ID3D11RenderTargetView> rtv;
         D3D11_RENDER_TARGET_VIEW_DESC rtvDesc {};
@@ -408,7 +387,7 @@ void D3d11RendererImpl::renderToEnvironmentMap()
         rtvDesc.Texture2DArray.ArraySize = 1;
         rtvDesc.Texture2DArray.FirstArraySlice = face;
         D3D_THROW_IF_FAILED(m_device->CreateRenderTargetView(m_environmentMap.cubeBuffer.Get(), &rtvDesc, rtv.GetAddressOf()),
-            "Failed to create render target view");
+                            "Failed to create render target view");
 
         m_deviceContext->OMSetRenderTargets(1, rtv.GetAddressOf(), 0);
         m_deviceContext->ClearRenderTargetView(rtv.Get(), clearColor);
@@ -429,8 +408,7 @@ void D3d11RendererImpl::renderToEnvironmentMap()
     m_deviceContext->GenerateMips(m_environmentMap.srv.Get());
 }
 
-void D3d11RendererImpl::renderToIrradianceMap()
-{
+void D3d11RendererImpl::renderToIrradianceMap() {
     // set viewport
     setViewport(Renderer::irradianceMapRes);
 
@@ -440,11 +418,10 @@ void D3d11RendererImpl::renderToIrradianceMap()
 
     m_perFrameBuffer.m_cache.projection = m_cubeMapPerspective;
 
-    for (int face = 0; face < 6; ++face)
-    {
+    for (int face = 0; face < 6; ++face) {
         // temporary render target view
         ComPtr<ID3D11RenderTargetView> rtv;
-        D3D11_RENDER_TARGET_VIEW_DESC rtvDesc{};
+        D3D11_RENDER_TARGET_VIEW_DESC rtvDesc {};
         rtvDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
         rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
         rtvDesc.Texture2DArray.MipSlice = 0;
@@ -470,8 +447,7 @@ void D3d11RendererImpl::renderToIrradianceMap()
     m_deviceContext->OMSetRenderTargets(1, &nullRtv, nullptr);
 }
 
-void D3d11RendererImpl::renderToSpecularMap()
-{
+void D3d11RendererImpl::renderToSpecularMap() {
     m_prefilterProgram.set(m_deviceContext);
     m_deviceContext->PSSetShaderResources(0, 1, m_environmentMap.srv.GetAddressOf());
     m_deviceContext->PSSetSamplers(1, 1, m_samplerLod.GetAddressOf());
@@ -482,16 +458,14 @@ void D3d11RendererImpl::renderToSpecularMap()
     FourFloatsBuffer m_specularRoughnessBuffer;
     m_specularRoughnessBuffer.Create(m_device);
 
-    for (int face = 0; face < 6; ++face)
-    {
+    for (int face = 0; face < 6; ++face) {
         // update shared constant buffer
         m_perFrameBuffer.m_cache.view = m_cubeMapViews[face];
         m_perFrameBuffer.Update(m_deviceContext);
         m_perFrameBuffer.VSSet(m_deviceContext, 1);
 
         unsigned int viewportSize = Renderer::specularMapRes;
-        for (int mipSlice = 0; mipSlice < Renderer::specularMapMipLevels; ++mipSlice, viewportSize = viewportSize >> 1)
-        {
+        for (int mipSlice = 0; mipSlice < Renderer::specularMapMipLevels; ++mipSlice, viewportSize = viewportSize >> 1) {
             // set viewport
             setViewport(viewportSize);
             float roughness = float(mipSlice) / float(Renderer::specularMapMipLevels - 1.0f);
@@ -508,7 +482,7 @@ void D3d11RendererImpl::renderToSpecularMap()
             rtvDesc.Texture2DArray.ArraySize = 1;
             rtvDesc.Texture2DArray.FirstArraySlice = face;
             D3D_THROW_IF_FAILED(m_device->CreateRenderTargetView(m_specularMap.cubeBuffer.Get(), &rtvDesc, rtv.GetAddressOf()),
-                "Failed to create render target view");
+                                "Failed to create render target view");
 
             m_deviceContext->OMSetRenderTargets(1, rtv.GetAddressOf(), 0);
             m_deviceContext->ClearRenderTargetView(rtv.Get(), clearColor);
@@ -524,23 +498,20 @@ void D3d11RendererImpl::renderToSpecularMap()
     m_deviceContext->OMSetRenderTargets(1, &nullRtv, nullptr);
 }
 
-void D3d11RendererImpl::calculateCubemapMatrices()
-{
+void D3d11RendererImpl::calculateCubemapMatrices() {
     CubeCamera cubeCamera(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
     m_cubeMapPerspective = cubeCamera.ProjectionMatrixD3d();
     cubeCamera.ViewMatricesD3d(m_cubeMapViews);
 }
 
-void D3d11RendererImpl::cleanupImmediateRenderTarget()
-{
+void D3d11RendererImpl::cleanupImmediateRenderTarget() {
     if (m_immediate.rtv != nullptr)
         m_immediate.rtv->Release();
     if (m_immediate.dsv != nullptr)
         m_immediate.dsv->Release();
 }
 
-void D3d11RendererImpl::compileShaders()
-{
+void D3d11RendererImpl::compileShaders() {
     m_pbrProgram.create(m_device, "PBR Program", "pbr");
     m_pbrModelProgram.create(m_device, "PBR Model Program", "pbr_model");
     m_convertProgram.create(m_device, "Convert Program", "cubemap", "to_cubemap");
@@ -549,8 +520,7 @@ void D3d11RendererImpl::compileShaders()
     m_prefilterProgram.create(m_device, "Prefilter Program", "cubemap", "prefilter");
 }
 
-void D3d11RendererImpl::createGeometries()
-{
+void D3d11RendererImpl::createGeometries() {
     // model
     const auto model = utility::LoadModel(g_model_dir.c_str());
     {
@@ -565,7 +535,7 @@ void D3d11RendererImpl::createGeometries()
         D3D11_SUBRESOURCE_DATA data {};
         data.pSysMem = model.vertices.data();
         D3D_THROW_IF_FAILED(m_device->CreateBuffer(&bufferDesc, &data, m_model.vertexBuffer.GetAddressOf()),
-            "Failed to create vertex buffer");
+                            "Failed to create vertex buffer");
     }
     {
         // index buffer
@@ -580,12 +550,11 @@ void D3d11RendererImpl::createGeometries()
         D3D11_SUBRESOURCE_DATA data {};
         data.pSysMem = model.indices.data();
         D3D_THROW_IF_FAILED(m_device->CreateBuffer(&bufferDesc, &data, m_model.indexBuffer.GetAddressOf()),
-            "Failed to create index buffer");
+                            "Failed to create index buffer");
     }
     {
         // input layout
-        D3D11_INPUT_ELEMENT_DESC inputElementDescs[] =
-        {
+        D3D11_INPUT_ELEMENT_DESC inputElementDescs[] = {
             { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(TexturedVertex, position), D3D11_INPUT_PER_VERTEX_DATA, 0 },
             { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, offsetof(TexturedVertex, uv), D3D11_INPUT_PER_VERTEX_DATA, 0 },
             { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(TexturedVertex, normal), D3D11_INPUT_PER_VERTEX_DATA, 0 },
@@ -598,8 +567,7 @@ void D3d11RendererImpl::createGeometries()
             ARRAYSIZE(inputElementDescs),
             m_pbrModelProgram.vertShaderBlob->GetBufferPointer(),
             m_pbrModelProgram.vertShaderBlob->GetBufferSize(),
-            m_texturedMeshLayout.GetAddressOf()
-        );
+            m_texturedMeshLayout.GetAddressOf());
 
         D3D_THROW_IF_FAILED(hr, "Failed to model sphere input layout");
     }
@@ -617,7 +585,7 @@ void D3d11RendererImpl::createGeometries()
         D3D11_SUBRESOURCE_DATA data {};
         data.pSysMem = sphere.vertices.data();
         D3D_THROW_IF_FAILED(m_device->CreateBuffer(&bufferDesc, &data, m_sphere.vertexBuffer.GetAddressOf()),
-            "Failed to create vertex buffer");
+                            "Failed to create vertex buffer");
     }
     {
         // index buffer
@@ -632,12 +600,11 @@ void D3d11RendererImpl::createGeometries()
         D3D11_SUBRESOURCE_DATA data {};
         data.pSysMem = sphere.indices.data();
         D3D_THROW_IF_FAILED(m_device->CreateBuffer(&bufferDesc, &data, m_sphere.indexBuffer.GetAddressOf()),
-            "Failed to create index buffer");
+                            "Failed to create index buffer");
     }
     {
         // input layout
-        D3D11_INPUT_ELEMENT_DESC inputElementDescs[] =
-        {
+        D3D11_INPUT_ELEMENT_DESC inputElementDescs[] = {
             { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(Vertex, position), D3D11_INPUT_PER_VERTEX_DATA, 0 },
             { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, offsetof(Vertex, normal), D3D11_INPUT_PER_VERTEX_DATA, 0 },
         };
@@ -647,8 +614,7 @@ void D3d11RendererImpl::createGeometries()
             ARRAYSIZE(inputElementDescs),
             m_pbrProgram.vertShaderBlob->GetBufferPointer(),
             m_pbrProgram.vertShaderBlob->GetBufferSize(),
-            m_meshLayout.GetAddressOf()
-        );
+            m_meshLayout.GetAddressOf());
 
         D3D_THROW_IF_FAILED(hr, "Failed to create sphere input layout");
     }
@@ -668,7 +634,7 @@ void D3d11RendererImpl::createGeometries()
         ZeroMemory(&data, sizeof(D3D11_SUBRESOURCE_DATA));
         data.pSysMem = cube.vertices.data();
         D3D_THROW_IF_FAILED(m_device->CreateBuffer(&bufferDesc, &data, m_cube.vertexBuffer.GetAddressOf()),
-            "Failed to create vertex buffer");
+                            "Failed to create vertex buffer");
     }
     {
         // index buffer
@@ -685,12 +651,11 @@ void D3d11RendererImpl::createGeometries()
         ZeroMemory(&data, sizeof(D3D11_SUBRESOURCE_DATA));
         data.pSysMem = cube.indices.data();
         D3D_THROW_IF_FAILED(m_device->CreateBuffer(&bufferDesc, &data, m_cube.indexBuffer.GetAddressOf()),
-            "Failed to create index buffer");
+                            "Failed to create index buffer");
     }
     {
         // input layout
-        D3D11_INPUT_ELEMENT_DESC inputElementDescs[] =
-        {
+        D3D11_INPUT_ELEMENT_DESC inputElementDescs[] = {
             { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
         };
 
@@ -699,15 +664,13 @@ void D3d11RendererImpl::createGeometries()
             ARRAYSIZE(inputElementDescs),
             m_convertProgram.vertShaderBlob->GetBufferPointer(),
             m_convertProgram.vertShaderBlob->GetBufferSize(),
-            m_cubeLayout.GetAddressOf()
-        );
+            m_cubeLayout.GetAddressOf());
 
         D3D_THROW_IF_FAILED(hr, "Failed to create cube input layout");
     }
 }
 
-void D3d11RendererImpl::createTexture2D(ComPtr<ID3D11ShaderResourceView>& srv, const Image& image, DXGI_FORMAT format)
-{
+void D3d11RendererImpl::createTexture2D(ComPtr<ID3D11ShaderResourceView>& srv, const Image& image, DXGI_FORMAT format) {
     D3D11_TEXTURE2D_DESC textureDesc {};
     textureDesc.Width = image.width;
     textureDesc.Height = image.height;
@@ -730,7 +693,7 @@ void D3d11RendererImpl::createTexture2D(ComPtr<ID3D11ShaderResourceView>& srv, c
 
     ComPtr<ID3D11Texture2D> texture;
     D3D_THROW_IF_FAILED(m_device->CreateTexture2D(&textureDesc, &textureData, texture.GetAddressOf()),
-        "Failed to create texture");
+                        "Failed to create texture");
 
     D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc {};
     srvDesc.Format = textureDesc.Format;
@@ -739,7 +702,8 @@ void D3d11RendererImpl::createTexture2D(ComPtr<ID3D11ShaderResourceView>& srv, c
     srvDesc.Texture1D.MipLevels = -1;
 
     D3D_THROW_IF_FAILED(m_device->CreateShaderResourceView(texture.Get(), &srvDesc, srv.GetAddressOf()),
-        "Failed to create shader resource view");
+                        "Failed to create shader resource view");
 }
 
-} } // namespace pbr::d3d11
+}  // namespace d3d11
+}  // namespace pbr

@@ -1,31 +1,30 @@
 #include "AssimpLoader.h"
-#include "base/Error.h"
-#include <assimp/Importer.hpp>
-#include <assimp/scene.h>
+#include <assert.h>
 #include <assimp/postprocess.h>
-#include <string>
+#include <assimp/scene.h>
+#include <assimp/Importer.hpp>
+#include <fstream>
 #include <iostream>
 #include <stdexcept>
-#include <assert.h>
-#include <fstream>
+#include <string>
+#include "base/Error.h"
+
 using namespace std;
 
 namespace pbr {
 
-TexturedMesh AssimpLoader::load(const char* path)
-{
+TexturedMesh AssimpLoader::load(const char* path) {
     string fullpath(path);
     Assimp::Importer importer;
     cout << "[Log] Loading scene [" << fullpath << "]" << endl;
     const aiScene* aiscene = importer.ReadFile(fullpath,
-        aiProcess_Triangulate |
-        aiProcess_FlipUVs |
-        aiProcess_CalcTangentSpace |
-        // aiProcess_GenSmoothNormals |
-        aiProcess_JoinIdenticalVertices
-    );
+                                               aiProcess_Triangulate |
+                                                   aiProcess_FlipUVs |
+                                                   aiProcess_CalcTangentSpace |
+                                                   // aiProcess_GenSmoothNormals |
+                                                   aiProcess_JoinIdenticalVertices);
 
-    if(!aiscene || aiscene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !aiscene->mRootNode) // if is Not Zero
+    if (!aiscene || aiscene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !aiscene->mRootNode)  // if is Not Zero
     {
         std::cout << "[ERROR] assimp failed to load.";
         std::cout << importer.GetErrorString() << std::endl;
@@ -37,8 +36,7 @@ TexturedMesh AssimpLoader::load(const char* path)
     TexturedMesh mesh;
 
     aiMesh* aimesh = aiscene->mMeshes[0];
-    for (int i = 0; i < aimesh->mNumVertices; ++i)
-    {
+    for (int i = 0; i < aimesh->mNumVertices; ++i) {
         const auto& position = aimesh->mVertices[i];
         TexturedVertex vertex;
         vertex.position = vec3(position.x, position.y, position.z);
@@ -53,8 +51,7 @@ TexturedMesh AssimpLoader::load(const char* path)
         mesh.vertices.push_back(vertex);
     }
 
-    for (int i = 0; i < aimesh->mNumFaces; ++i)
-    {
+    for (int i = 0; i < aimesh->mNumFaces; ++i) {
         const aiFace& face = aimesh->mFaces[i];
         mesh.indices.push_back(uvec3(face.mIndices[1], face.mIndices[0], face.mIndices[2]));
     }
@@ -67,24 +64,20 @@ TexturedMesh AssimpLoader::load(const char* path)
     if (!bin.is_open())
         throw runtime_error("Failed to open for write");
 
-    bin.write((char*) mesh.indices.data(), mesh.indices.size() * sizeof(uvec3));
-    bin.write((char*) mesh.vertices.data(), mesh.vertices.size() * sizeof(TexturedVertex));
+    bin.write((char*)mesh.indices.data(), mesh.indices.size() * sizeof(uvec3));
+    bin.write((char*)mesh.vertices.data(), mesh.vertices.size() * sizeof(TexturedVertex));
     bin.close();
 
     return mesh;
 }
 
-} // namespace pbr
+}  // namespace pbr
 
-int main()
-{
+int main() {
     pbr::AssimpLoader loader;
-    try
-    {
+    try {
         loader.load("gltf/WaterBottle.gltf");
-    }
-    catch(const std::runtime_error& e)
-    {
+    } catch (const std::runtime_error& e) {
         std::cerr << e.what() << '\n';
     }
 }

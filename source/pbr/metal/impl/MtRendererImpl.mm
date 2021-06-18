@@ -1,8 +1,9 @@
 #import "MtRendererImpl.h"
+#import "Mesh.h"
 #import "MtHelpers.h"
 #import "base/Error.h"
 #import "core/Window.h"
-#import "Mesh.h"
+
 #define GLFW_INCLUDE_NONE
 #define GLFW_EXPOSE_NATIVE_COCOA
 #import <Cocoa/Cocoa.h>
@@ -18,12 +19,13 @@ id<MTLCommandQueue> g_commandQueue;
 id<MTLRenderPipelineState> g_renderPipelineState;
 id<MTLBuffer> g_triangleBuffer;
 
-namespace pbr { namespace mt {
+namespace pbr {
+namespace mt {
 
-MtRendererImpl::MtRendererImpl(const Window* pWindow) : m_pWindow(pWindow) { }
+MtRendererImpl::MtRendererImpl(const Window* pWindow)
+    : m_pWindow(pWindow) {}
 
-void MtRendererImpl::Initialize()
-{
+void MtRendererImpl::Initialize() {
     g_device = MTLCreateSystemDefaultDevice();
     if (!g_device)
         THROW_EXCEPTION("metal: Failed to create default device");
@@ -38,15 +40,14 @@ void MtRendererImpl::Initialize()
     compileOptions.languageVersion = MTLLanguageVersion1_1;
 
     NSString* shaderSource = [NSString stringWithContentsOfFile:
-        METAL_DIR @"pbr.metal"
-        encoding:NSUTF8StringEncoding
-        error:NULL];
+                                           METAL_DIR @"pbr.metal"
+                                                       encoding:NSUTF8StringEncoding
+                                                          error:NULL];
 
     NSError* compileError;
     g_lib = [g_device newLibraryWithSource:shaderSource options:compileOptions error:&compileError];
-    if (!g_lib)
-    {
-        NSString* error = [NSString stringWithFormat: @"Failed to create library:\n\t%@", compileError];
+    if (!g_lib) {
+        NSString* error = [NSString stringWithFormat:@"Failed to create library:\n\t%@", compileError];
         MT_THROW_NS_STRING(error);
     }
 
@@ -68,21 +69,15 @@ void MtRendererImpl::Initialize()
     // buffer
     // g_triangleBuffer = [g_device newBufferWithBytes:g_triangle length:sizeof(g_triangle) options:MTLCPUCacheModeWriteCombined];
     // assert(g_triangleBuffer);
-
 }
 
-void MtRendererImpl::DumpGraphicsCardInfo()
-{
-
+void MtRendererImpl::DumpGraphicsCardInfo() {
 }
 
-void MtRendererImpl::PrepareGpuResources()
-{
-
+void MtRendererImpl::PrepareGpuResources() {
 }
 
-void MtRendererImpl::Render(const Camera& camera)
-{
+void MtRendererImpl::Render(const Camera& camera) {
     const Extent2i& extent = m_pWindow->GetFrameBufferExtent();
     g_pLayer.drawableSize = CGSizeMake(extent.width, extent.height);
     id<CAMetalDrawable> drawable = [g_pLayer nextDrawable];
@@ -99,11 +94,13 @@ void MtRendererImpl::Render(const Camera& camera)
     id<MTLRenderCommandEncoder> renderCommandEncoder = [commandBuffer renderCommandEncoderWithDescriptor:renderPassDesc];
 
     [renderCommandEncoder setRenderPipelineState:g_renderPipelineState];
-    [renderCommandEncoder setVertexBytes:(vec4[]){
-            { 0, 0.5, 0, 1 },
-            { -0.5, -0.5, 0, 1 },
-            { 0.5, -0.5, 0, 1 },
-    } length:3 * sizeof(vec4) atIndex:0];
+    [renderCommandEncoder setVertexBytes:(vec4[]) {
+                                             { 0, 0.5, 0, 1 },
+                                             { -0.5, -0.5, 0, 1 },
+                                             { 0.5, -0.5, 0, 1 },
+                                         }
+                                  length:3 * sizeof(vec4)
+                                 atIndex:0];
     // [renderCommandEncoder setVertexBuffer:g_triangleBuffer offset:0 atIndex:0];
     [renderCommandEncoder drawPrimitives:MTLPrimitiveTypeTriangle vertexStart:0 vertexCount:3];
 
@@ -112,14 +109,11 @@ void MtRendererImpl::Render(const Camera& camera)
     [commandBuffer commit];
 }
 
-void MtRendererImpl::Resize(const Extent2i& extent)
-{
-
+void MtRendererImpl::Resize(const Extent2i& extent) {
 }
 
-void MtRendererImpl::Finalize()
-{
-
+void MtRendererImpl::Finalize() {
 }
 
-} } // namespace pbr::mt
+}
+}  // namespace pbr::mt

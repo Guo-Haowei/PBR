@@ -1,42 +1,37 @@
 #include "GLRenderer.h"
 #include "impl/GLRendererImpl.h"
 
-namespace pbr { namespace gl {
+namespace pbr {
+namespace gl {
 
 GLRenderer::GLRenderer(const Window* pWindow)
     : Renderer(pWindow)
-    , impl(std::make_unique<GLRendererImpl>(pWindow))
-{
+    , impl(std::make_unique<GLRendererImpl>(pWindow)) {
 }
 
-void GLRenderer::Initialize()
-{
+void GLRenderer::Initialize() {
     impl->Initialize();
 }
 
-void GLRenderer::DumpGraphicsCardInfo()
-{
+void GLRenderer::DumpGraphicsCardInfo() {
     impl->DumpGraphicsCardInfo();
 }
 
-void GLRenderer::Render(const Camera& camera)
-{
+void GLRenderer::Render(const Camera& camera) {
     impl->Render(camera);
 }
 
-void GLRenderer::Resize(const Extent2i& extent)
-{
+void GLRenderer::Resize(const Extent2i& extent) {
     impl->Resize(extent);
 }
 
-void GLRenderer::Finalize()
-{
+void GLRenderer::Finalize() {
     impl->Finalize();
 }
 
-void GLRenderer::PrepareGpuResources()
-{
+void GLRenderer::PrepareGpuResources() {
     impl->PrepareGpuResources();
 }
 
-} } // namespace pbr::gl
+}  // namespace gl
+}  // namespace pbr

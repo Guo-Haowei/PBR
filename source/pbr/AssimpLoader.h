@@ -3,11 +3,11 @@
 
 namespace pbr {
 
-class AssimpLoader
-{
-public:
+class AssimpLoader {
+   public:
     TexturedMesh load(const char* path);
-private:
+
+   private:
 };
 
-} // namespace pbr
+}  // namespace pbr

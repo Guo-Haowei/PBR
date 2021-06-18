@@ -1,18 +1,16 @@
 #include "Window.h"
-#include "base/Error.h"
-#include "Application.h"
 #include <GLFW/glfw3.h>
+#include "Application.h"
+#include "base/Error.h"
 
 namespace pbr {
 
-void Window::Initialize(const WindowCreateInfo& info)
-{
+void Window::Initialize(const WindowCreateInfo& info) {
     m_keys.fill(0);
 
     m_renderApi = info.renderApi;
 
-    glfwSetErrorCallback([](int error, const char* desc)
-    {
+    glfwSetErrorCallback([](int error, const char* desc) {
         THROW_EXCEPTION(desc);
     });
 
@@ -30,13 +28,11 @@ void Window::Initialize(const WindowCreateInfo& info)
 
     glfwSetWindowUserPointer(m_pWindow, this);
 
-    glfwSetWindowSizeCallback(m_pWindow, [](GLFWwindow* pWindow, int w, int h)
-    {
+    glfwSetWindowSizeCallback(m_pWindow, [](GLFWwindow* pWindow, int w, int h) {
         Extent2i extent { w, h };
         reinterpret_cast<pbr::Window*>(glfwGetWindowUserPointer(pWindow))->SetWindowExtent({ w, h });
     });
-    glfwSetFramebufferSizeCallback(m_pWindow, [](GLFWwindow* pWindow, int w, int h)
-    {
+    glfwSetFramebufferSizeCallback(m_pWindow, [](GLFWwindow* pWindow, int w, int h) {
         Extent2i extent { w, h };
         reinterpret_cast<pbr::Window*>(glfwGetWindowUserPointer(pWindow))->SetFrameBufferExtent({ w, h });
         Application::GetSingleton().GetRenderer()->Resize(extent);
@@ -59,62 +55,51 @@ void Window::Initialize(const WindowCreateInfo& info)
     m_thisFrameCursorPos = m_lastFrameCursorPos = vec2(x, y);
 }
 
-void Window::Finalize()
-{
+void Window::Finalize() {
     glfwDestroyWindow(m_pWindow);
     glfwTerminate();
 }
 
-bool Window::ShouldClose() const
-{
+bool Window::ShouldClose() const {
     return glfwWindowShouldClose(m_pWindow);
 }
 
-void Window::PollEvents() const
-{
+void Window::PollEvents() const {
     glfwPollEvents();
 }
 
-void Window::PostUpdate()
-{
+void Window::PostUpdate() {
     m_scroll = 0;
     m_lastFrameCursorPos = m_thisFrameCursorPos;
 }
 
-void Window::SwapBuffers() const
-{
+void Window::SwapBuffers() const {
     if (m_renderApi == RenderApi::OPENGL)
         glfwSwapBuffers(m_pWindow);
 }
 
-float Window::GetAspectRatio() const
-{
+float Window::GetAspectRatio() const {
     return static_cast<float>(m_framebufferExtent.width) / static_cast<float>(m_framebufferExtent.height);
 }
 
-void Window::setWindowSizeFromCreateInfo(const WindowCreateInfo& info)
-{
+void Window::setWindowSizeFromCreateInfo(const WindowCreateInfo& info) {
 #if TARGET_PLATFORM != PLATFORM_EMSCRIPTEN
-    if (info.windowScale > 0.0f)
-    {
+    if (info.windowScale > 0.0f) {
         const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
         m_windowExtent.width = static_cast<int>(info.windowScale * mode->width);
         m_windowExtent.height = static_cast<int>(info.windowScale * mode->height);
-    }
-    else
+    } else
 #endif
     {
         m_windowExtent = info.extent;
     }
 }
 
-void Window::setWindowHintFromCreateInfo(const WindowCreateInfo& info)
-{
+void Window::setWindowHintFromCreateInfo(const WindowCreateInfo& info) {
     m_windowTitle = "PBR ";
     glfwWindowHint(GLFW_RESIZABLE, info.resizable);
 
-    switch (info.renderApi)
-    {
+    switch (info.renderApi) {
         case RenderApi::OPENGL:
             glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, PBR_GL_VERSION_MAJOR);
             glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, PBR_GL_VERSION_MINOR);
@@ -144,8 +129,7 @@ void Window::setWindowHintFromCreateInfo(const WindowCreateInfo& info)
     m_windowTitle.append(" (").append(RenderApiToString(info.renderApi)).append(")");
 }
 
-void Window::mouseButtonCallback(GLFWwindow* glfwWindow, int button, int action, int mode)
-{
+void Window::mouseButtonCallback(GLFWwindow* glfwWindow, int button, int action, int mode) {
     Window* window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(glfwWindow));
     if (button > window->m_buttons.size())
         return;
@@ -153,25 +137,21 @@ void Window::mouseButtonCallback(GLFWwindow* glfwWindow, int button, int action,
     window->m_buttons[button] = action;
 }
 
-void Window::mouseScrollCallback(GLFWwindow* glfwWindow, double x, double y)
-{
+void Window::mouseScrollCallback(GLFWwindow* glfwWindow, double x, double y) {
     Window* window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(glfwWindow));
     window->m_scroll = y;
 }
 
-void Window::mouseCursorCallback(GLFWwindow* glfwWindow, double x, double y)
-{
+void Window::mouseCursorCallback(GLFWwindow* glfwWindow, double x, double y) {
     Window* window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(glfwWindow));
     window->m_thisFrameCursorPos = vec2(x, y);
 }
 
-void Window::keyCallback(GLFWwindow* glfwWindow, int key, int scan, int action, int mode)
-{
+void Window::keyCallback(GLFWwindow* glfwWindow, int key, int scan, int action, int mode) {
     Window* window = reinterpret_cast<Window*>(glfwGetWindowUserPointer(glfwWindow));
     if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
         glfwSetWindowShouldClose(glfwWindow, true);
-    if (key < window->m_keys.size())
-    {
+    if (key < window->m_keys.size()) {
         if (action == GLFW_RELEASE)
             window->m_keys[key] = 0;
         else if (action == GLFW_PRESS)
@@ -179,4 +159,4 @@ void Window::keyCallback(GLFWwindow* glfwWindow, int key, int scan, int action, 
     }
 }
 
-} // namespace pbr
+}  // namespace pbr

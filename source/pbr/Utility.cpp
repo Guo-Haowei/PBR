@@ -1,19 +1,22 @@
-#include "base/Error.h"
 #include "Utility.h"
+#include "base/Error.h"
+
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #include <fstream>
 #include <streambuf>
 using std::ifstream;
-using std::istreambuf_iterator;
 using std::ios;
+using std::istreambuf_iterator;
 
-namespace pbr { namespace utility {
+namespace pbr {
+namespace utility {
 
-TexturedMesh LoadModel(const char* path)
-{
-    string txtpath(path); txtpath.append("model.txt");
-    string binpath(path); binpath.append("model.bin");
+TexturedMesh LoadModel(const char* path) {
+    string txtpath(path);
+    txtpath.append("model.txt");
+    string binpath(path);
+    binpath.append("model.bin");
     ifstream txt(txtpath);
     if (!txt.is_open())
         THROW_EXCEPTION("Failed to open file \"" + txtpath + "\"");
@@ -26,18 +29,14 @@ TexturedMesh LoadModel(const char* path)
     TexturedMesh mesh;
     string str;
     int counter = 0;
-    while (txt >> str)
-    {
-        if (str == "size")
-        {
-            int size; txt >> size;
-            if (counter == 0)
-            {
+    while (txt >> str) {
+        if (str == "size") {
+            int size;
+            txt >> size;
+            if (counter == 0) {
                 mesh.indices.resize(size / sizeof(uvec3));
                 bin.read(reinterpret_cast<char*>(mesh.indices.data()), size);
-            }
-            else
-            {
+            } else {
                 mesh.vertices.resize(size / sizeof(TexturedVertex));
                 bin.read(reinterpret_cast<char*>(mesh.vertices.data()), size);
             }
@@ -50,8 +49,7 @@ TexturedMesh LoadModel(const char* path)
 
     return mesh;
 }
-string ReadAsciiFile(const char* path)
-{
+string ReadAsciiFile(const char* path) {
     ifstream f(path);
     if (!f.good())
         THROW_EXCEPTION("filesystem: Failed to open file '" + string(path) + "'");
@@ -59,13 +57,11 @@ string ReadAsciiFile(const char* path)
     return string((istreambuf_iterator<char>(f)), istreambuf_iterator<char>());
 }
 
-string ReadAsciiFile(const string& path)
-{
+string ReadAsciiFile(const string& path) {
     return ReadAsciiFile(path.c_str());
 }
 
-vector<char> ReadBinaryFile(const char* path)
-{
+vector<char> ReadBinaryFile(const char* path) {
     ifstream f(path, ios::ate | ios::binary);
     if (!f.good())
         THROW_EXCEPTION("filesystem: Failed to open file '" + string(path) + "'");
@@ -78,33 +74,27 @@ vector<char> ReadBinaryFile(const char* path)
     return buffer;
 }
 
-vector<char> ReadBinaryFile(const string& path)
-{
+vector<char> ReadBinaryFile(const string& path) {
     return ReadBinaryFile(path.c_str());
 }
 
-Image ReadPng(const char* path, int comp)
-{
+Image ReadPng(const char* path, int comp) {
     Image image;
     unsigned char* data = stbi_load(path, &image.width, &image.height, &image.component, 0);
     if (!data)
         THROW_EXCEPTION("filesystem: Failed to open image '" + string(path) + "'");
 
     image.dataType = DataType::UINT_8T;
-    if (comp == 0)
-    {
+    if (comp == 0) {
         image.buffer.pData = data;
         image.buffer.sizeInByte = image.width * image.height * image.component;
-    }
-    else
-    {
+    } else {
         if (!(comp == 4 && image.component == 3))
             THROW_EXCEPTION("image: unsupported component");
         image.buffer.sizeInByte = image.width * image.height * comp;
         image.component = comp;
         unsigned char* buffer = (unsigned char*)malloc(image.buffer.sizeInByte);
-        for (int i = 0; i < image.width * image.height; ++i)
-        {
+        for (int i = 0; i < image.width * image.height; ++i) {
             buffer[4 * i] = data[3 * i];
             buffer[4 * i + 1] = data[3 * i + 1];
             buffer[4 * i + 2] = data[3 * i + 2];
@@ -116,19 +106,15 @@ Image ReadPng(const char* path, int comp)
     return image;
 }
 
-Image ReadPng(const string& path, int comp)
-{
+Image ReadPng(const string& path, int comp) {
     return ReadPng(path.c_str(), comp);
 }
 
-
-Image ReadHDRImage(const string& path)
-{
+Image ReadHDRImage(const string& path) {
     return ReadHDRImage(path.c_str());
 }
 
-Image ReadHDRImage(const char* path)
-{
+Image ReadHDRImage(const char* path) {
     Image image;
     float* data = stbi_loadf(path, &image.width, &image.height, &image.component, 0);
     if (!data)
@@ -140,8 +126,7 @@ Image ReadHDRImage(const char* path)
     return image;
 }
 
-Image ReadBrdfLUT(const char* path, int size)
-{
+Image ReadBrdfLUT(const char* path, int size) {
     ifstream bin(path, ios::out | ios::binary);
     if (!bin.is_open())
         THROW_EXCEPTION("filesystem: Failed to open image '" + string(path) + "'");
@@ -157,13 +142,11 @@ Image ReadBrdfLUT(const char* path, int size)
     return image;
 }
 
-Image ReadBrdfLUT(const string& path, int size)
-{
+Image ReadBrdfLUT(const string& path, int size) {
     return ReadBrdfLUT(path.c_str(), size);
 }
 
-bool IsNaN(const mat4& m)
-{
+bool IsNaN(const mat4& m) {
     const float* p = &m[0].x;
     for (int i = 0; i < 16; ++i)
         if (glm::isnan(p[i]))
@@ -171,4 +154,5 @@ bool IsNaN(const mat4& m)
     return false;
 }
 
-} } // namespace pbr::utility
+}  // namespace utility
+}  // namespace pbr
