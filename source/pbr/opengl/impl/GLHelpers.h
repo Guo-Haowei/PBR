@@ -1,6 +1,7 @@
 #pragma once
 #include "GLPrerequisites.h"
 #include "base/Definitions.h"
+#include "base/Error.h"
 
 namespace pbr {
 namespace gl {
