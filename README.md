@@ -15,9 +15,7 @@ API           | Implementation
 OpenGL 4.0    | Done
 OpenGL ES 3.0 | Done
 Direct3D 11   | Done
-Direct3D 12   | Planning
-<!-- Vulkan      | In progress -->
-<!-- Metal       | In progress -->
+Direct3D 12   | In progress
 
 ## Screenshots
 
