@@ -11,7 +11,7 @@ ADD_LIBRARY(pbr
 IF (WIN32)
     ADD_EXECUTABLE(assimp_loader AssimpLoader.cpp)
     TARGET_INCLUDE_DIRECTORIES(assimp_loader PRIVATE ${PROJECT_SOURCE_DIR}/external/assimp/include)
-    SET(lib_assimp_debug "${PROJECT_SOURCE_DIR}/external/assimp/build/lib/Debug/assimp-vc142-mtd.lib")
+    SET(lib_assimp_debug "${PROJECT_SOURCE_DIR}/external/assimp/build/lib/Debug/assimp-vc143-mtd.lib")
     SET(lib_irrxmld_debug "${PROJECT_SOURCE_DIR}/external/assimp/build/lib/Debug/IrrXMLd.lib")
     SET(lib_zlib_debug "${PROJECT_SOURCE_DIR}/external/assimp/build/lib/Debug/zlibstaticd.lib")
     TARGET_LINK_LIBRARIES(assimp_loader debug ${lib_assimp_debug} ${lib_irrxmld_debug} ${lib_zlib_debug})
